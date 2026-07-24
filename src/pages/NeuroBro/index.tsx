@@ -3,7 +3,7 @@ import axios from "axios";
 
 const API_BASE = "http://83.217.202.227:8002/api/bro";
 const USER_ID = 233876992;
-const BOT_TOKEN = "SuperSecret_987654321_Token"; // Твой BOT_SECRET_TOKEN
+const BOT_TOKEN = "SuperSecret_987654321_Token"; // Укажи свой BOT_SECRET_TOKEN
 
 type Message = {
   role: "user" | "assistant";
@@ -18,8 +18,8 @@ export default function NeuroBro() {
   const [selectedModel, setSelectedModel] = useState("gpt4o_mini");
   const [selectedPersona, setSelectedPersona] = useState("default");
   
-  const [attachedUrl, setAttachedUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  // Храним превью и Base64 прикреплённой картинки
+  const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,33 +80,19 @@ export default function NeuroBro() {
     fetchHistory();
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Конвертация файла в Base64 прямо в браузере
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
 
-    const formData = new FormData();
-    formData.append("user_id", USER_ID.toString());
-    formData.append("file", file);
-
-    setIsUploading(true);
-    try {
-      const res = await axios.post(`${API_BASE}/upload`, formData, {
-        headers: {
-          "X-Bot-Token": BOT_TOKEN,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (res.data.success) {
-        setAttachedUrl(res.data.url);
-      } else {
-        alert(res.data.error || "Ошибка загрузки изображения");
-      }
-    } catch (e) {
-      alert("Не удалось загрузить изображение.");
-    } finally {
-      setIsUploading(false);
-    }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      setAttachedPreview(reader.result as string);
+    };
+    reader.onerror = () => {
+      alert("Не удалось прочитать файл изображения.");
+    };
   };
 
   const handleClearHistory = async () => {
@@ -125,7 +111,7 @@ export default function NeuroBro() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputPrompt.trim() && !attachedUrl) return;
+    if (!inputPrompt.trim() && !attachedPreview) return;
 
     const userText = inputPrompt;
     setInputPrompt("");
@@ -133,8 +119,8 @@ export default function NeuroBro() {
     setMessages((prev) => [...prev, { role: "user", content: userText }]);
     setIsLoading(true);
 
-    const attachments = attachedUrl ? [attachedUrl] : [];
-    setAttachedUrl(null);
+    const attachments = attachedPreview ? [attachedPreview] : [];
+    setAttachedPreview(null);
 
     try {
       const res = await axios.post(
@@ -164,7 +150,7 @@ export default function NeuroBro() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] gap-3">
-      {/* Верхняя панель с выбором режима, всплывающими подсказками и корзиной */}
+      {/* Верхняя панель */}
       <div className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5 bg-gray-100/70 dark:bg-gray-800 p-1 rounded-xl">
           {models.map((m) => (
@@ -180,7 +166,6 @@ export default function NeuroBro() {
                 {m.name}
               </button>
 
-              {/* Тултип с информацией и ценой при наведении мышкой */}
               <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-30 w-56 p-2.5 bg-gray-900 text-white text-[11px] rounded-xl shadow-xl border border-gray-700 pointer-events-none">
                 <div className="font-bold text-blue-400 mb-0.5">{m.name} ({m.cost})</div>
                 <div className="text-gray-300 leading-snug">{m.hint}</div>
@@ -202,7 +187,6 @@ export default function NeuroBro() {
             ))}
           </select>
 
-          {/* Иконка корзины */}
           <button
             onClick={handleClearHistory}
             title="Очистить память диалога"
@@ -216,7 +200,7 @@ export default function NeuroBro() {
         </div>
       </div>
 
-      {/* Окно сообщений */}
+      {/* Чат */}
       <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 text-sm">
@@ -256,18 +240,18 @@ export default function NeuroBro() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Панель ввода сообщений и файлов */}
+      {/* Панель ввода */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-900 space-y-2 shadow-sm">
         
-        {/* Превью прикреплённого изображения */}
-        {attachedUrl && (
+        {/* Превью прикреплённой картинки */}
+        {attachedPreview && (
           <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-2 border border-blue-200 dark:border-blue-800">
-            <img src={attachedUrl} alt="Загружено" className="w-8 h-8 object-cover rounded-lg" />
+            <img src={attachedPreview} alt="Превью" className="w-9 h-9 object-cover rounded-lg" />
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-              Картинка прикреплена
+              Фото готово к отправке
             </span>
             <button
-              onClick={() => setAttachedUrl(null)}
+              onClick={() => setAttachedPreview(null)}
               className="text-gray-400 hover:text-red-500 text-xs font-bold ml-1"
             >
               ✕
@@ -275,11 +259,11 @@ export default function NeuroBro() {
           </div>
         )}
 
-        {/* Поле ввода + Векторная скрепка + Круглая кнопка отправки */}
+        {/* Инпут + Скрепка + Самолетик */}
         <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1.5 px-3 border border-gray-100 dark:border-gray-800">
           <label 
             className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700"
-            title="Прикрепить фото или файл"
+            title="Прикрепить фото"
           >
             <input
               type="file"
@@ -297,14 +281,13 @@ export default function NeuroBro() {
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder={isUploading ? "Загружаем картинку..." : "Спроси меня о чем угодно..."}
-            disabled={isUploading}
+            placeholder="Спроси меня о чем угодно..."
             className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none px-2"
           />
 
           <button
             onClick={handleSendMessage}
-            disabled={isLoading || isUploading || (!inputPrompt.trim() && !attachedUrl)}
+            disabled={isLoading || (!inputPrompt.trim() && !attachedPreview)}
             className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0"
             title="Отправить"
           >
@@ -314,7 +297,6 @@ export default function NeuroBro() {
           </button>
         </div>
 
-        {/* Информационная строка под полем ввода */}
         <div className="text-[11px] text-gray-400 font-medium px-3 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span>
           <span>{models.find((m) => m.id === selectedModel)?.hint}</span>
