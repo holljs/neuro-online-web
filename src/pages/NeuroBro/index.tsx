@@ -18,7 +18,6 @@ export default function NeuroBro() {
   const [selectedModel, setSelectedModel] = useState("gpt4o_mini");
   const [selectedPersona, setSelectedPersona] = useState("default");
   
-  // Храним превью и Base64 прикреплённой картинки
   const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -80,7 +79,6 @@ export default function NeuroBro() {
     fetchHistory();
   }, []);
 
-  // Конвертация файла в Base64 прямо в браузере
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -88,7 +86,9 @@ export default function NeuroBro() {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-      setAttachedPreview(reader.result as string);
+      if (typeof reader.result === "string") {
+        setAttachedPreview(reader.result);
+      }
     };
     reader.onerror = () => {
       alert("Не удалось прочитать файл изображения.");
@@ -119,7 +119,8 @@ export default function NeuroBro() {
     setMessages((prev) => [...prev, { role: "user", content: userText }]);
     setIsLoading(true);
 
-    const attachments = attachedPreview ? [attachedPreview] : [];
+    // В массиве attachments передаём строго массив строк (string[])
+    const attachments: string[] = attachedPreview ? [attachedPreview] : [];
     setAttachedPreview(null);
 
     try {
@@ -141,8 +142,12 @@ export default function NeuroBro() {
         alert(res.data.error || "Ошибка получения ответа");
       }
     } catch (e: any) {
-      const errDetail = e.response?.data?.detail || "Ошибка связи с сервером";
-      alert(errDetail);
+      const errDetail = e.response?.data?.detail;
+      if (Array.isArray(errDetail)) {
+        alert("Ошибка формата данных: " + JSON.stringify(errDetail));
+      } else {
+        alert(errDetail || "Ошибка связи с сервером");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,7 +248,7 @@ export default function NeuroBro() {
       {/* Панель ввода */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-900 space-y-2 shadow-sm">
         
-        {/* Превью прикреплённой картинки */}
+        {/* Превью картинки */}
         {attachedPreview && (
           <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-2 border border-blue-200 dark:border-blue-800">
             <img src={attachedPreview} alt="Превью" className="w-9 h-9 object-cover rounded-lg" />
@@ -259,7 +264,6 @@ export default function NeuroBro() {
           </div>
         )}
 
-        {/* Инпут + Скрепка + Самолетик */}
         <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1.5 px-3 border border-gray-100 dark:border-gray-800">
           <label 
             className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700"
