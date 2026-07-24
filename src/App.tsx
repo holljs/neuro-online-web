@@ -18,6 +18,7 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import NeuroBro from "./pages/NeuroBro";
 
 export default function App() {
   return (
@@ -27,7 +28,8 @@ export default function App() {
         <Routes>
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+              <Route index path="/" element={<Home />} />
+              <Route path="/neuro-bro" element={<NeuroBro />} /> {/* <-- ДОБАВЛЯЕМ СЮДА! */}
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
