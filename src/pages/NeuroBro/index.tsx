@@ -3,7 +3,7 @@ import axios from "axios";
 
 const API_BASE = "http://83.217.202.227:8002/api/bro";
 const USER_ID = 233876992;
-const BOT_TOKEN = "SuperSecret_987654321_Token"; // Укажи свой BOT_SECRET_TOKEN
+const BOT_TOKEN = "SuperSecret_987654321_Token"; // Твой BOT_SECRET_TOKEN
 
 type Message = {
   role: "user" | "assistant";
@@ -24,9 +24,24 @@ export default function NeuroBro() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const models = [
-    { id: "gpt4o_mini", name: "Быстрая", hint: "Только текст. Не видит фото (3 энергии / запрос)" },
-    { id: "gemini_flash", name: "Думающая", hint: "Распознаёт фото и файлы, решает задачи (10 энергии / запрос)" },
-    { id: "gemini_31_pro", name: "Про-кодер", hint: "Супер-ИИ: верстает по скрину и пишет код (50 энергии / запрос)" },
+    { 
+      id: "gpt4o_mini", 
+      name: "Быстрая", 
+      cost: "3 энергии",
+      hint: "Только текст. Не видит фото (3 энергии / запрос)" 
+    },
+    { 
+      id: "gemini_flash", 
+      name: "Думающая", 
+      cost: "10 энергии",
+      hint: "Распознаёт фото и файлы, решает задачи (10 энергии / запрос)" 
+    },
+    { 
+      id: "gemini_31_pro", 
+      name: "Про-кодер", 
+      cost: "50 энергии",
+      hint: "Супер-ИИ: верстает по скрину и пишет код (50 энергии / запрос)" 
+    },
   ];
 
   const personas = [
@@ -85,7 +100,7 @@ export default function NeuroBro() {
       if (res.data.success) {
         setAttachedUrl(res.data.url);
       } else {
-        alert(res.data.error || "Ошибка загрузки фото");
+        alert(res.data.error || "Ошибка загрузки изображения");
       }
     } catch (e) {
       alert("Не удалось загрузить изображение.");
@@ -149,21 +164,28 @@ export default function NeuroBro() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] gap-3">
-      {/* Верхняя панель с переключателями и иконкой корзины */}
+      {/* Верхняя панель с выбором режима, всплывающими подсказками и корзиной */}
       <div className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5 bg-gray-100/70 dark:bg-gray-800 p-1 rounded-xl">
           {models.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setSelectedModel(m.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                selectedModel === m.id
-                  ? "bg-blue-600 text-white shadow-sm font-bold"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              }`}
-            >
-              {m.name}
-            </button>
+            <div key={m.id} className="relative group">
+              <button
+                onClick={() => setSelectedModel(m.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  selectedModel === m.id
+                    ? "bg-blue-600 text-white shadow-sm font-bold"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                {m.name}
+              </button>
+
+              {/* Тултип с информацией и ценой при наведении мышкой */}
+              <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-30 w-56 p-2.5 bg-gray-900 text-white text-[11px] rounded-xl shadow-xl border border-gray-700 pointer-events-none">
+                <div className="font-bold text-blue-400 mb-0.5">{m.name} ({m.cost})</div>
+                <div className="text-gray-300 leading-snug">{m.hint}</div>
+              </div>
+            </div>
           ))}
         </div>
 
@@ -180,7 +202,7 @@ export default function NeuroBro() {
             ))}
           </select>
 
-          {/* Аккуратная SVG-корзина как в мессенджере */}
+          {/* Иконка корзины */}
           <button
             onClick={handleClearHistory}
             title="Очистить память диалога"
@@ -194,7 +216,7 @@ export default function NeuroBro() {
         </div>
       </div>
 
-      {/* Окно сообщений диалога */}
+      {/* Окно сообщений */}
       <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 text-sm">
@@ -234,14 +256,15 @@ export default function NeuroBro() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Нижняя стильная панель ввода (как в Телеграм / ВК) */}
+      {/* Панель ввода сообщений и файлов */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-900 space-y-2 shadow-sm">
         
-        {/* Прикреплённое фото */}
+        {/* Превью прикреплённого изображения */}
         {attachedUrl && (
-          <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-full w-fit ml-2">
+          <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-2 border border-blue-200 dark:border-blue-800">
+            <img src={attachedUrl} alt="Загружено" className="w-8 h-8 object-cover rounded-lg" />
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-              Изображение прикреплено
+              Картинка прикреплена
             </span>
             <button
               onClick={() => setAttachedUrl(null)}
@@ -252,11 +275,11 @@ export default function NeuroBro() {
           </div>
         )}
 
-        {/* Поле ввода + Круглая кнопка-самолётик */}
+        {/* Поле ввода + Векторная скрепка + Круглая кнопка отправки */}
         <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1.5 px-3 border border-gray-100 dark:border-gray-800">
           <label 
             className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700"
-            title="Прикрепить фото"
+            title="Прикрепить фото или файл"
           >
             <input
               type="file"
@@ -264,7 +287,6 @@ export default function NeuroBro() {
               onChange={handleFileUpload}
               className="hidden"
             />
-            {/* Скрепка из ТГ */}
             <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
             </svg>
@@ -275,12 +297,11 @@ export default function NeuroBro() {
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder={isUploading ? "Загружаем фото..." : "Спроси меня о чем угодно..."}
+            placeholder={isUploading ? "Загружаем картинку..." : "Спроси меня о чем угодно..."}
             disabled={isUploading}
             className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none px-2"
           />
 
-          {/* Синяя круглая кнопка со стрелкой-самолётиком */}
           <button
             onClick={handleSendMessage}
             disabled={isLoading || isUploading || (!inputPrompt.trim() && !attachedUrl)}
@@ -293,7 +314,7 @@ export default function NeuroBro() {
           </button>
         </div>
 
-        {/* Подсказка снизу о режиме */}
+        {/* Информационная строка под полем ввода */}
         <div className="text-[11px] text-gray-400 font-medium px-3 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span>
           <span>{models.find((m) => m.id === selectedModel)?.hint}</span>
