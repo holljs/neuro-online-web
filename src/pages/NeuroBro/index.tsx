@@ -1,349 +1,310 @@
-import requests
-from fastapi import FastAPI, HTTPException, Header, File, UploadFile, Form
-from fastapi.staticfiles import StaticFiles
-import shutil
-import uuid
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List
-import replicate
-import asyncio
-import logging
-import random
-import os
-import hashlib
-import base64
-import hmac
-import time
-from urllib.parse import parse_qsl, urlencode
-from dotenv import load_dotenv
-import database as db
-from datetime import datetime
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - NEUROBRO - %(message)s')
-load_dotenv()
+const API_BASE = "http://83.217.202.227:8002/api/bro";
+const USER_ID = 233876992;
+const BOT_TOKEN = "SuperSecret_987654321_Token"; // Проверь свой BOT_SECRET_TOKEN из .env
 
-app = FastAPI(title="NeuroBro API")
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
 
-os.makedirs("media", exist_ok=True)
-app.mount("/api/bro/media", StaticFiles(directory="media"), name="media")
+export default function NeuroBro() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputPrompt, setInputPrompt] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [selectedModel, setSelectedModel] = useState("gpt4o_mini");
+  const [selectedPersona, setSelectedPersona] = useState("default");
+  
+  const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
 
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
-)
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
-VK_APP_SECRET = os.getenv("VK_SERVICE_KEY") 
-VK_TOKEN = os.getenv("VK_TOKEN")
-BOT_SECRET_TOKEN = os.getenv("BOT_SECRET_TOKEN")
-MY_VK_ID = int(os.getenv("MY_VK_ID", 233876992))
-client = replicate.Client(api_token=REPLICATE_API_TOKEN)
+  const models = [
+    { 
+      id: "gpt4o_mini", 
+      name: "Быстрая", 
+      cost: "3 энергии",
+      hint: "Только текст. Не видит фото (3 энергии / запрос)" 
+    },
+    { 
+      id: "gemini_flash", 
+      name: "Думающая", 
+      cost: "10 энергии",
+      hint: "Распознаёт фото и файлы, решает задачи (10 энергии / запрос)" 
+    },
+    { 
+      id: "gemini_31_pro", 
+      name: "Про-кодер", 
+      cost: "50 энергии",
+      hint: "Супер-ИИ: верстает по скрину и пишет код (50 энергии / запрос)" 
+    },
+  ];
 
-# --- УНИВЕРСАЛЬНАЯ СИСТЕМА ЗАЩИТЫ (ВК + ВЕБ-САЙТ) ---
-def verify_safe_call(target_user_id: int, x_vk_sign: str = None, x_bot_token: str = None):
-    # 1. Авторизация с веб-сайта по секретному токену
-    if x_bot_token and BOT_SECRET_TOKEN and x_bot_token == BOT_SECRET_TOKEN:
-        return True
+  const personas = [
+    { id: "default", name: "Универсальный" },
+    { id: "coder", name: "Разработчик" },
+    { id: "copywriter", name: "Копирайтер" },
+    { id: "tutor", name: "Репетитор" },
+    { id: "psychologist", name: "Психолог" },
+    { id: "hr", name: "HR-Эксперт" },
+    { id: "language_coach", name: "Английский" },
+    { id: "health", name: "ЗОЖ-Наставник" },
+    { id: "strategist", name: "Бизнес-Стратег" },
+  ];
 
-    # 2. Авторизация из VK Mini Apps по подписи
-    if x_vk_sign and VK_APP_SECRET:
-        try:
-            query_params = dict(parse_qsl(x_vk_sign, keep_blank_values=True))
-            vk_sign = query_params.pop('sign', None)
-            
-            vk_params = {k: v for k, v in query_params.items() if k.startswith('vk_')}
-            ordered_params = sorted(vk_params.items())
-            params_str = urlencode(ordered_params, safe=':/')
-            
-            secret_bytes = VK_APP_SECRET.encode('utf-8')
-            params_bytes = params_str.encode('utf-8')
-            
-            hmac_hash = hmac.new(secret_bytes, params_bytes, hashlib.sha256).digest()
-            decoded_hash = base64.b64encode(hmac_hash).decode('utf-8')
-            
-            expected = decoded_hash.rstrip('=')
-            actual = vk_sign.rstrip('=').replace('-', '+').replace('_', '/')
-            
-            if expected == actual:
-                return True
-        except Exception as e:
-            logging.error(f"⚠️ VK AUTH ERROR: {e}")
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-    logging.error(f"⛔️ AUTH ERROR: Отклонен доступ для юзера {target_user_id}")
-    raise HTTPException(status_code=403, detail="Forbidden: Invalid Authorization")
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
 
-# --- СЛОВАРЬ ПРОФЕССИЙ ---
-SYSTEM_PROMPTS = {
-    "default": "Ты полезный, умный и вежливый ИИ-ассистент.",
-    "coder": "Ты Senior разработчик. Пиши чистый код.",
-    "language_coach": "Ты опытный преподаватель английского и языковой коуч. Помогай с грамматикой и переводами.",
-    "health": "Ты профессиональный ЗОЖ-Наставник. Давай советы по тренировкам, питанию и режиму дня.",
-    "psychologist": "Ты эмпатичный психолог-коуч. Помогай людям разбираться в их чувствах, давай поддержку.",
-    "hr": "Ты карьерный HR-эксперт. Помогай с резюме, собеседованиями и поиском работы.",
-    "tutor": "Ты Умный Репетитор. Объясняй сложные темы школьной и университетской программы просто и понятно. Решай задачи пошагово.",
-    "copywriter": "Ты гениальный Копирайтер и маркетолог. Пиши продающие, вовлекающие и грамотные тексты для соцсетей, сайтов и рассылок.",
-    "strategist": "Ты опытный Бизнес-стратег. Помогай с планированием, анализом конкурентов, бизнес-моделями и стартап-идеями."
-}
-
-active_chat_users = {}
-
-class PersonalAIRequest(BaseModel):
-    user_id: int
-    prompt: str 
-    clear_history: bool = False 
-    model_type: str = "gpt4o_mini"
-    persona: str = "default"
-    attachments: Optional[List[str]] = []
-
-class BonusRequest(BaseModel):
-    user_id: int
-
-# --- ОБЕРТКА ДЛЯ REPLICATE ---
-async def ask_replicate(model_name: str, system_prompt: str, user_prompt: str, history_msgs: list, max_tokens: int, image_path: Optional[str] = None) -> str:
-    if not REPLICATE_API_TOKEN:
-        raise Exception("REPLICATE_API_TOKEN не настроен в .env")
-
-    full_prompt_context = f"System: {system_prompt}\n\n"
-    for msg in history_msgs:
-        role = "User" if msg['role'] == 'user' else "Assistant"
-        full_prompt_context += f"{role}: {msg['content']}\n"
-    
-    full_prompt_context += f"User: {user_prompt}\nAssistant:"
-
-    input_data = {
-        "prompt": full_prompt_context,
-        "max_completion_tokens": max_tokens,
-        "temperature": 0.7
-    }
-
-    if image_path and os.path.exists(image_path):
-        try:
-            image_file = open(image_path, "rb")
-            if "kimi" in model_name.lower():
-                input_data["image"] = image_file
-            else:
-                input_data["image_input"] = [image_file]
-            logging.info(f"📸 Картинка {image_path} прикреплена к запросу ({model_name})")
-        except Exception as img_err:
-            logging.error(f"⚠️ Ошибка картинки: {img_err}")
-
-    def run_replicate():
-        output = client.run(model_name, input=input_data)
-        if isinstance(output, list):
-            return "".join([str(chunk) for chunk in output]).strip()
-        elif hasattr(output, 'read'):
-            return output.read().decode('utf-8').strip()
-        return str(output).strip()
-
-    try:
-        logging.info(f"🚀 Запрос в Replicate ({model_name})...")
-        response_text = await asyncio.to_thread(run_replicate)
-        return response_text
-    except Exception as e:
-        logging.error(f"❌ Ошибка Replicate ({model_name}): {e}")
-        raise e
-    finally:
-        if "image" in input_data and hasattr(input_data["image"], "close"):
-            input_data["image"].close()
-        elif "image_input" in input_data and isinstance(input_data["image_input"], list):
-            for item in input_data["image_input"]:
-                if hasattr(item, "close"):
-                    item.close()
-
-@app.on_event("startup")
-async def startup_event():
-    db.init_db()
-    logging.info("⚡️ Сервер NeuroBro успешно запущен!")
-
-@app.get("/api/bro/user/{user_id}")
-async def get_user_energy(
-    user_id: int, 
-    x_vk_sign: Optional[str] = Header(None),
-    x_bot_token: Optional[str] = Header(None, alias="X-Bot-Token")
-):
-    verify_safe_call(user_id, x_vk_sign, x_bot_token)
-    energy = db.get_energy(user_id)
-    
-    bonus_file = "claimed_bro_bonuses.txt"
-    bonus_claimed = False
-    if os.path.exists(bonus_file):
-        with open(bonus_file, "r", encoding="utf-8") as f:
-            if str(user_id) in f.read().splitlines():
-                bonus_claimed = True
-
-    if energy is None:
-        db.add_user(user_id, username='user', initial_balance=5, initial_energy=20)
-        energy = 20
-        send_vk_message(MY_VK_ID, f"🚀 Новый пользователь в НейроБро!\nID: {user_id}\nБаланс: 20 ⚡️")
-        
-    return {"success": True, "energy": energy, "bonus_claimed": bonus_claimed}
-
-@app.get("/api/bro/history")
-async def get_history(
-    user_id: int, 
-    x_vk_sign: Optional[str] = Header(None),
-    x_bot_token: Optional[str] = Header(None, alias="X-Bot-Token")
-):
-    verify_safe_call(user_id, x_vk_sign, x_bot_token)
-    history = db.get_chat_history(user_id, limit=20)
-    return {"success": True, "history": history}
-
-@app.post("/api/bro/chat")
-async def handle_chat(
-    request: PersonalAIRequest, 
-    x_vk_sign: Optional[str] = Header(None),
-    x_bot_token: Optional[str] = Header(None, alias="X-Bot-Token")
-):
-    verify_safe_call(request.user_id, x_vk_sign, x_bot_token)
-
-    if request.user_id in active_chat_users:
-        last_request_time = active_chat_users[request.user_id]
-        if time.time() - last_request_time < 120:
-            raise HTTPException(status_code=429, detail="Пожалуйста, дождитесь ответа.")
-
-    active_chat_users[request.user_id] = time.time()
-
-    COSTS_MAP = {
-        "gpt4o_mini": 3,
-        "gemini_flash": 10,
-        "gemini_31_pro": 50
-    }
-    
-    request_cost = COSTS_MAP.get(request.model_type, 3)
-
-    if request.attachments and len(request.attachments) > 0:
-        request.attachments = [request.attachments[0]]
-
-    energy = db.get_energy(request.user_id)
-    if energy is None or energy < request_cost: 
-        raise HTTPException(status_code=402, detail=f"Нужно {request_cost} ⚡ для этого запроса.")
-
-    try:
-        db.update_energy(request.user_id, -request_cost)
-        db.save_chat_message(request.user_id, "user", request.prompt)
-
-        sys_prompt = SYSTEM_PROMPTS.get(request.persona, SYSTEM_PROMPTS["default"])
-        current_date = datetime.now().strftime("%d %B %Y года")
-        safe_sys_prompt = sys_prompt + f" ВАЖНО: Текущая дата: {current_date}. Ты УМЕЕШЬ видеть фото. НЕ умеешь рисовать."
-
-        raw_history = db.get_chat_history(request.user_id, limit=20)
-        
-        if raw_history and raw_history[-1]['role'] == 'user' and raw_history[-1]['content'] == request.prompt:
-            history_msgs = raw_history[:-1]
-        else:
-            history_msgs = raw_history
-            
-        history_msgs = history_msgs[-10:]
-
-        token_limit = 8000 if request.user_id == MY_VK_ID else 1500
-
-        local_image_path = None
-        if request.attachments and len(request.attachments) > 0:
-            attach_item = request.attachments[0]
-            if attach_item.startswith("http"):
-                filename = attach_item.split("/")[-1]
-                local_image_path = f"media/{filename}"
-
-        if request.model_type == "gpt4o_mini" and not local_image_path:
-            full_response = await ask_replicate(
-                model_name="openai/gpt-4.1-nano",
-                system_prompt=safe_sys_prompt,
-                user_prompt=request.prompt,
-                history_msgs=history_msgs,
-                max_tokens=token_limit
-            )
-            db.save_chat_message(request.user_id, "assistant", full_response)
-            return {"success": True, "response": full_response}
-
-        elif request.model_type == "gemini_flash":
-            full_response = await ask_replicate(
-                model_name="openai/gpt-4.1-mini",
-                system_prompt=safe_sys_prompt,
-                user_prompt=request.prompt,
-                history_msgs=history_msgs,
-                max_tokens=token_limit,
-                image_path=local_image_path
-            )
-            db.save_chat_message(request.user_id, "assistant", full_response)
-            return {"success": True, "response": full_response}
-
-        elif request.model_type == "gemini_31_pro":
-            full_response = await ask_replicate(
-                model_name="moonshotai/kimi-k2.5",
-                system_prompt=safe_sys_prompt,
-                user_prompt=request.prompt,
-                history_msgs=history_msgs,
-                max_tokens=token_limit,
-                image_path=local_image_path
-            )
-            db.save_chat_message(request.user_id, "assistant", full_response)
-            return {"success": True, "response": full_response}
-
-        else:
-            db.update_energy(request.user_id, request_cost)
-            full_response = "🤖 Режим «Быстрая» работает только с текстом. Для фото переключитесь на «Думающая» или «Про»!"
-            db.save_chat_message(request.user_id, "assistant", full_response)
-            return {"success": True, "response": full_response}
-
-    except Exception as e:
-        logging.error(f"Ошибка генерации: {e}")
-        db.update_energy(request.user_id, request_cost)
-        return {"success": False, "error": str(e)}
-    finally:
-        active_chat_users.pop(request.user_id, None)
-
-@app.post("/api/bro/chat/clear")
-async def clear_chat(
-    request: PersonalAIRequest, 
-    x_vk_sign: Optional[str] = Header(None),
-    x_bot_token: Optional[str] = Header(None, alias="X-Bot-Token")
-):
-    verify_safe_call(request.user_id, x_vk_sign, x_bot_token)
-    db.clear_chat_history(request.user_id)
-    return {"success": True, "response": "Память очищена! 🧹"}
-
-@app.post("/api/bro/upload")
-async def upload_file(
-    user_id: int = Form(...), 
-    file: UploadFile = File(...), 
-    x_vk_sign: Optional[str] = Header(None),
-    x_bot_token: Optional[str] = Header(None, alias="X-Bot-Token")
-):
-    verify_safe_call(user_id, x_vk_sign, x_bot_token)
-    try:
-        ext = file.filename.split('.')[-1].lower() if '.' in file.filename else ''
-        if ext not in ['jpg', 'jpeg', 'png', 'webp']:
-            return {"success": False, "error": "Поддерживаются только JPG, PNG, WEBP."}
-
-        filename = f"bro_{uuid.uuid4().hex}.{ext}"
-        filepath = f"media/{filename}"
-        
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        file_url = f"http://83.217.202.227:8002/api/bro/media/{filename}"
-        return {"success": True, "url": file_url}
-        
-    except Exception as e:
-        logging.error(f"Ошибка загрузки: {e}")
-        return {"success": False, "error": "Ошибка при загрузке файла."}
-
-def send_vk_message(target_user_id: int, text: str):
-    if not VK_TOKEN:
-        return
-    try:
-        url = "https://api.vk.com/method/messages.send"
-        params = {
-            "user_id": target_user_id,
-            "random_id": random.randint(1, 2147483647),
-            "message": text,
-            "access_token": VK_TOKEN,
-            "v": "5.131"
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/history?user_id=${USER_ID}`, {
+          headers: { "X-Bot-Token": BOT_TOKEN },
+        });
+        if (res.data.success && res.data.history) {
+          setMessages(res.data.history);
         }
-        requests.post(url, data=params, timeout=5)
-    except Exception as e:
-        logging.error(f"❌ Ошибка отправки в ВК: {e}")
+      } catch (e) {
+        console.error("Ошибка загрузки истории:", e);
+      }
+    };
+    fetchHistory();
+  }, []);
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("neurobro_server:app", host="0.0.0.0", port=8002, workers=1)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setAttachedPreview(reader.result);
+      }
+    };
+    reader.onerror = () => {
+      alert("Не удалось прочитать файл изображения.");
+    };
+  };
+
+  const handleClearHistory = async () => {
+    if (!window.confirm("Очистить историю диалога и сбросить память нейросети?")) return;
+
+    try {
+      await axios.post(
+        `${API_BASE}/chat/clear`,
+        { user_id: USER_ID },
+        { headers: { "X-Bot-Token": BOT_TOKEN } }
+      );
+      setMessages([]);
+    } catch (e) {
+      alert("Ошибка очистки чата.");
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputPrompt.trim() && !attachedPreview) return;
+
+    const userText = inputPrompt;
+    setInputPrompt("");
+    
+    setMessages((prev) => [...prev, { role: "user", content: userText }]);
+    setIsLoading(true);
+
+    const attachments: string[] = attachedPreview ? [attachedPreview] : [];
+    setAttachedPreview(null);
+
+    try {
+      const res = await axios.post(
+        `${API_BASE}/chat`,
+        {
+          user_id: USER_ID,
+          prompt: userText,
+          model_type: selectedModel,
+          persona: selectedPersona,
+          attachments: attachments,
+        },
+        { headers: { "X-Bot-Token": BOT_TOKEN } }
+      );
+
+      if (res.data.success && res.data.response) {
+        setMessages((prev) => [...prev, { role: "assistant", content: res.data.response }]);
+      } else {
+        alert(res.data.error || "Ошибка получения ответа");
+      }
+    } catch (e: any) {
+      const errDetail = e.response?.data?.detail;
+      if (Array.isArray(errDetail)) {
+        alert("Ошибка формата данных: " + JSON.stringify(errDetail));
+      } else {
+        alert(errDetail || "Ошибка связи с сервером");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-120px)] gap-3">
+      {/* Верхняя панель */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+        <div className="flex flex-wrap items-center gap-1.5 bg-gray-100/70 dark:bg-gray-800 p-1 rounded-xl">
+          {models.map((m) => (
+            <div key={m.id} className="relative group">
+              <button
+                onClick={() => setSelectedModel(m.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  selectedModel === m.id
+                    ? "bg-blue-600 text-white shadow-sm font-bold"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                {m.name}
+              </button>
+
+              <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-30 w-56 p-2.5 bg-gray-900 text-white text-[11px] rounded-xl shadow-xl border border-gray-700 pointer-events-none">
+                <div className="font-bold text-blue-400 mb-0.5">{m.name} ({m.cost})</div>
+                <div className="text-gray-300 leading-snug">{m.hint}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedPersona}
+            onChange={(e) => setSelectedPersona(e.target.value)}
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none"
+          >
+            {personas.map((p) => (
+              <option key={p.id} value={p.id} className="dark:bg-gray-900">
+                {p.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={handleClearHistory}
+            title="Очистить память диалога"
+            className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          >
+            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Чат */}
+      <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto space-y-4">
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 text-sm">
+            <p className="font-bold text-gray-700 dark:text-gray-200 text-base mb-1">
+              Нейро-Бро готов к работе
+            </p>
+            <p className="text-xs max-w-sm text-gray-500">
+              Задайте любой вопрос или загрузите изображение для анализа.
+            </p>
+          </div>
+        ) : (
+          messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-2xl p-4 text-sm whitespace-pre-wrap leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-blue-600 text-white rounded-br-none"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none"
+                }`}
+              >
+                {msg.content}
+              </div>
+            </div>
+          ))
+        )}
+
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 dark:bg-gray-800 text-gray-500 rounded-2xl rounded-bl-none p-4 text-sm animate-pulse">
+              Нейро-Бро печатает...
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Панель ввода */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-900 space-y-2 shadow-sm">
+        
+        {/* Превью картинки */}
+        {attachedPreview && (
+          <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-2 border border-blue-200 dark:border-blue-800">
+            <img src={attachedPreview} alt="Превью" className="w-9 h-9 object-cover rounded-lg" />
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              Фото готово к отправке
+            </span>
+            <button
+              onClick={() => setAttachedPreview(null)}
+              className="text-gray-400 hover:text-red-500 text-xs font-bold ml-1"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1.5 px-3 border border-gray-100 dark:border-gray-800">
+          <label 
+            className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700"
+            title="Прикрепить фото"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+          </label>
+
+          <input
+            type="text"
+            value={inputPrompt}
+            onChange={(e) => setInputPrompt(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+            placeholder="Спроси меня о чем угодно..."
+            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none px-2"
+          />
+
+          <button
+            onClick={handleSendMessage}
+            disabled={isLoading || (!inputPrompt.trim() && !attachedPreview)}
+            className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0"
+            title="Отправить"
+          >
+            <svg className="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="text-[11px] text-gray-400 font-medium px-3 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span>
+          <span>{models.find((m) => m.id === selectedModel)?.hint}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
