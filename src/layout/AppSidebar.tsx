@@ -35,15 +35,6 @@ const navItems: NavItem[] = [
     name: "Нейро-Художник",
     path: "/neuro-artist",
   },
-  {
-    icon: <UserCircleIcon />,
-    name: "Нейро-Академия",
-    subItems: [
-      { name: "Нейро-Малыш", path: "/neuro-malysh", pro: false },
-      { name: "Нейро-Гений", path: "/neuro-genius", pro: false },
-      { name: "Нейро-Репетитор", path: "/neuro-tutor", pro: false },
-    ],
-  },
 ];
 
 const othersItems: NavItem[] = [
