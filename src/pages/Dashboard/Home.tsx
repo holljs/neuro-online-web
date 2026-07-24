@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 export default function Home() {
   const tools = [
@@ -19,20 +19,20 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* Приветственный блок */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-gray-900">
+      {/* Приветственный блок без эмодзи */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Добро пожаловать в NeuroStudio
+          Добро пожаловать в Нейро-Онлайн
         </h1>
         <p className="text-gray-500 text-sm max-w-2xl">
           Единая платформа искусственного интеллекта. Выберите нужный инструмент для работы с текстом, изображениями и видео.
         </p>
       </div>
 
-      {/* Сетка инструментов */}
+      {/* Сетка инструментов (Только Бро и Художник) */}
       <div>
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-          Доступные инструменты
+          Доступные сервисы
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -57,7 +57,7 @@ export default function Home() {
               </div>
 
               <div className="mt-6 flex items-center text-sm font-semibold text-blue-600 dark:text-blue-400">
-                Открыть инструмент &rarr;
+                Перейти к сервису &rarr;
               </div>
             </Link>
           ))}
