@@ -23,26 +23,10 @@ export default function NeuroBro() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Список моделей с описанием возможностей и стоимостью
   const models = [
-    { 
-      id: "gpt4o_mini", 
-      name: "Быстрая", 
-      cost: "3 ⚡", 
-      hint: "Только текст. Не видит фото!" 
-    },
-    { 
-      id: "gemini_flash", 
-      name: "Думающая", 
-      cost: "10 ⚡", 
-      hint: "Распознаёт фото и файлы, решает задачи" 
-    },
-    { 
-      id: "gemini_31_pro", 
-      name: "Про-кодер", 
-      cost: "50 ⚡", 
-      hint: "Супер-ИИ: напишет код по скрину сайта или макету" 
-    },
+    { id: "gpt4o_mini", name: "Быстрая", hint: "Только текст. Не видит фото (3 энергии / запрос)" },
+    { id: "gemini_flash", name: "Думающая", hint: "Распознаёт фото и файлы, решает задачи (10 энергии / запрос)" },
+    { id: "gemini_31_pro", name: "Про-кодер", hint: "Супер-ИИ: верстает по скрину и пишет код (50 энергии / запрос)" },
   ];
 
   const personas = [
@@ -165,7 +149,52 @@ export default function NeuroBro() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] gap-3">
-      {/* Окно чата */}
+      {/* Верхняя панель с переключателями и иконкой корзины */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+        <div className="flex flex-wrap items-center gap-1.5 bg-gray-100/70 dark:bg-gray-800 p-1 rounded-xl">
+          {models.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setSelectedModel(m.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                selectedModel === m.id
+                  ? "bg-blue-600 text-white shadow-sm font-bold"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedPersona}
+            onChange={(e) => setSelectedPersona(e.target.value)}
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none"
+          >
+            {personas.map((p) => (
+              <option key={p.id} value={p.id} className="dark:bg-gray-900">
+                {p.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Аккуратная SVG-корзина как в мессенджере */}
+          <button
+            onClick={handleClearHistory}
+            title="Очистить память диалога"
+            className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          >
+            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Окно сообщений диалога */}
       <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 text-sm">
@@ -205,68 +234,14 @@ export default function NeuroBro() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Панель управления и ввода внизу */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 space-y-3 shadow-sm">
+      {/* Нижняя стильная панель ввода (как в Телеграм / ВК) */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-900 space-y-2 shadow-sm">
         
-        {/* Выбор режима (красивые кнопки с описанием и контрастным балансом) */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 dark:border-gray-800 pb-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            {models.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setSelectedModel(m.id)}
-                title={m.hint}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-                  selectedModel === m.id
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200"
-                }`}
-              >
-                <span>{m.name}</span>
-                <span className={`text-[11px] font-extrabold ${
-                  selectedModel === m.id ? "text-yellow-300" : "text-amber-500"
-                }`}>
-                  {m.cost}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedPersona}
-              onChange={(e) => setSelectedPersona(e.target.value)}
-              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none"
-            >
-              {personas.map((p) => (
-                <option key={p.id} value={p.id} className="dark:bg-gray-900">
-                  {p.name}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={handleClearHistory}
-              title="Стереть историю диалога и начать с чистого листа"
-              className="px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition flex items-center gap-1.5"
-            >
-              <span>🧹</span>
-              <span>Очистить память</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Текстовая подсказка о возможностях выбранной модели */}
-        <div className="text-[11px] text-gray-400 font-medium px-1 flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-          {models.find((m) => m.id === selectedModel)?.hint}
-        </div>
-
         {/* Прикреплённое фото */}
         {attachedUrl && (
-          <div className="flex items-center gap-2 p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg w-fit">
+          <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-full w-fit ml-2">
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-              Фото прикреплено
+              Изображение прикреплено
             </span>
             <button
               onClick={() => setAttachedUrl(null)}
@@ -277,11 +252,11 @@ export default function NeuroBro() {
           </div>
         )}
 
-        {/* Поле ввода + Векторная SVG-скрепка */}
-        <div className="flex items-center gap-3 pt-1">
+        {/* Поле ввода + Круглая кнопка-самолётик */}
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1.5 px-3 border border-gray-100 dark:border-gray-800">
           <label 
-            className="cursor-pointer p-2 rounded-xl text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition hover:bg-gray-100 dark:hover:bg-gray-800"
-            title="Прикрепить изображение"
+            className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700"
+            title="Прикрепить фото"
           >
             <input
               type="file"
@@ -289,13 +264,8 @@ export default function NeuroBro() {
               onChange={handleFileUpload}
               className="hidden"
             />
-            <svg 
-              className="w-5 h-5 stroke-current fill-none" 
-              viewBox="0 0 24 24" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
+            {/* Скрепка из ТГ */}
+            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
             </svg>
           </label>
@@ -305,18 +275,28 @@ export default function NeuroBro() {
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder={isUploading ? "Загружаем изображение..." : "Задайте вопрос..."}
+            placeholder={isUploading ? "Загружаем фото..." : "Спроси меня о чем угодно..."}
             disabled={isUploading}
-            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none px-2"
           />
 
+          {/* Синяя круглая кнопка со стрелкой-самолётиком */}
           <button
             onClick={handleSendMessage}
             disabled={isLoading || isUploading || (!inputPrompt.trim() && !attachedUrl)}
-            className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 shadow-sm"
+            className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0"
+            title="Отправить"
           >
-            Отправить
+            <svg className="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+            </svg>
           </button>
+        </div>
+
+        {/* Подсказка снизу о режиме */}
+        <div className="text-[11px] text-gray-400 font-medium px-3 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span>
+          <span>{models.find((m) => m.id === selectedModel)?.hint}</span>
         </div>
       </div>
     </div>
