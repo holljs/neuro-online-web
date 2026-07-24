@@ -1,4 +1,10 @@
 import React, { useState } from "react";
+import axios from "axios";
+
+// --- НАСТРОЙКИ ПОДКЛЮЧЕНИЯ К СЕРВЕРУ ---
+const API_BASE = "http://83.217.202.227:8001/api";
+const USER_ID = 233876992; // Твой VK ID
+const BOT_TOKEN = "SuperSecret_987654321_Token"; // Вставь токен из .env файла бэкенда
 
 type CategoryType = "photo" | "video" | "business";
 
@@ -8,6 +14,7 @@ type HistoryItem = {
   prompt: string;
   date: string;
   images: string[];
+  resultUrl?: string;
 };
 
 export default function NeuroArtist() {
@@ -16,6 +23,7 @@ export default function NeuroArtist() {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [currentResultUrl, setCurrentResultUrl] = useState<string | null>(null);
 
   // История генераций
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -56,22 +64,76 @@ export default function NeuroArtist() {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleGenerate = () => {
-    if (!prompt.trim() && activeMode !== "gfpgan" && selectedImages.length === 0) return;
-    setIsGenerating(true);
+  // Опрос сервера на статус готовности
+  const checkStatus = async (taskId: string, modeObjName: string) => {
+    try {
+      const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${USER_ID}`, {
+        headers: { "X-Bot-Token": BOT_TOKEN },
+      });
 
-    setTimeout(() => {
+      if (res.data.status === "ready" && res.data.result_url) {
+        const finalUrl = res.data.result_url;
+        setCurrentResultUrl(finalUrl);
+        setIsGenerating(false);
+
+        // Добавляем в историю
+        const newItem: HistoryItem = {
+          id: taskId,
+          modeName: modeObjName,
+          prompt: prompt || "Генерация по изображению",
+          date: "Только что",
+          images: [...selectedImages],
+          resultUrl: finalUrl,
+        };
+        setHistory((prev) => [newItem, ...prev]);
+      } else if (res.data.success === false) {
+        alert("Ошибка генерации: " + (res.data.error || "Неизвестная ошибка"));
+        setIsGenerating(false);
+      } else {
+        // Опрашиваем сервер каждые 3 секунды
+        setTimeout(() => checkStatus(taskId, modeObjName), 3000);
+      }
+    } catch (e) {
+      console.error("Ошибка проверки статуса:", e);
       setIsGenerating(false);
-      const currentModeObj = currentModes.find((m) => m.id === activeMode);
-      const newItem: HistoryItem = {
-        id: Date.now().toString(),
-        modeName: currentModeObj?.name || "Генерация",
-        prompt: prompt || "Генерация по изображению",
-        date: "Только что",
-        images: [...selectedImages],
-      };
-      setHistory((prev) => [newItem, ...prev]);
-    }, 2500);
+    }
+  };
+
+  // Запуск реальной генерации
+  const handleGenerate = async () => {
+    if (!prompt.trim() && activeMode !== "gfpgan" && selectedImages.length === 0) return;
+
+    setIsGenerating(true);
+    setCurrentResultUrl(null);
+
+    const currentModeObj = currentModes.find((m) => m.id === activeMode);
+    const modeName = currentModeObj?.name || "Генерация";
+
+    try {
+      const response = await axios.post(
+        `${API_BASE}/generate`,
+        {
+          user_id: USER_ID,
+          model: activeMode,
+          prompt: prompt,
+          image_urls: [], // Для передачи базовых URL из внешних источников
+        },
+        {
+          headers: { "X-Bot-Token": BOT_TOKEN },
+        }
+      );
+
+      if (response.data.success && response.data.task_id) {
+        checkStatus(response.data.task_id, modeName);
+      } else {
+        alert("Не удалось создать задачу на сервере");
+        setIsGenerating(false);
+      }
+    } catch (e) {
+      console.error("Ошибка отправки генерации:", e);
+      alert("Ошибка подключения к бэкенду или недостаточно кредитов.");
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -195,9 +257,31 @@ export default function NeuroArtist() {
             disabled={isGenerating}
             className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {isGenerating ? "Идет генерация..." : "Запустить генерацию"}
+            {isGenerating ? "Нейросеть генерирует..." : "Запустить генерацию"}
           </button>
         </div>
+
+        {/* Окно результатов текущей генерации */}
+        {currentResultUrl && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 text-center">
+            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
+              Результат готов
+            </h3>
+            {currentResultUrl.endsWith(".mp4") ? (
+              <video src={currentResultUrl} controls className="mx-auto rounded-xl max-h-[500px]" />
+            ) : (
+              <img src={currentResultUrl} alt="Результат" className="mx-auto rounded-xl max-h-[500px] object-contain" />
+            )}
+            <a
+              href={currentResultUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block mt-4 text-sm font-semibold text-blue-600 dark:text-blue-400 underline"
+            >
+              Открыть в полном размере
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Правая колонка — История генераций */}
@@ -225,16 +309,13 @@ export default function NeuroArtist() {
                   <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-3">
                     {item.prompt}
                   </p>
-                  {item.images.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pt-1">
-                      {item.images.map((imgSrc, imgIdx) => (
-                        <img
-                          key={imgIdx}
-                          src={imgSrc}
-                          alt="Прикреплённое"
-                          className="w-14 h-14 object-cover rounded-md border border-gray-200 dark:border-gray-700"
-                        />
-                      ))}
+                  {item.resultUrl && (
+                    <div className="pt-2">
+                      {item.resultUrl.endsWith(".mp4") ? (
+                        <video src={item.resultUrl} className="w-full h-32 object-cover rounded-lg" />
+                      ) : (
+                        <img src={item.resultUrl} alt="Результат" className="w-full h-32 object-cover rounded-lg" />
+                      )}
                     </div>
                   )}
                 </div>
