@@ -1,82 +1,66 @@
 import React from "react";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
-export default function ECommerce() {
+export default function Home() {
+  const tools = [
+    {
+      title: "Нейро-Бро",
+      desc: "Универсальный ИИ-помощник для решения любых задач, работы с текстом и кодом.",
+      path: "/neuro-bro",
+      tag: "Текст и Чат",
+    },
+    {
+      title: "Нейро-Художник",
+      desc: "Генерация изображений, обработка фото, создание видеоклипов и материалов для бизнеса.",
+      path: "/neuro-artist",
+      tag: "Медиа & Дизайн",
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Приветственный баннер */}
-      <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6 sm:p-8 text-white shadow-lg">
-        <h1 className="text-2xl sm:text-3xl font-black mb-2">
-          Добро пожаловать в Нейро-Онлайн! 👋
+      {/* Приветственный блок */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-gray-900">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Добро пожаловать в NeuroStudio
         </h1>
-        <p className="text-blue-100 text-sm sm:text-base max-w-2xl">
-          Ваша единая экосистема искусственного интеллекта. Выберите нужный инструмент ниже и приступайте к работе.
+        <p className="text-gray-500 text-sm max-w-2xl">
+          Единая платформа искусственного интеллекта. Выберите нужный инструмент для работы с текстом, изображениями и видео.
         </p>
       </div>
 
-      {/* Сетка карточек продуктов */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Карточка 1: Нейро-Бро */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900 flex flex-col justify-between hover:shadow-md transition">
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center text-2xl mb-4">
-              🤖
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              Нейро-Бро
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Универсальный текстовый ИИ-ассистент на базе ChatGPT, Gemini и Kimi. Поможет со статьями, кодом и аналитикой.
-            </p>
-          </div>
-          <Link
-            to="/neuro-bro"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 py-3 px-4 text-center font-medium text-white hover:bg-blue-700 transition"
-          >
-            Открыть чат
-          </Link>
-        </div>
+      {/* Сетка инструментов */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          Доступные инструменты
+        </h2>
 
-        {/* Карточка 2: Нейро-Художник */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900 flex flex-col justify-between hover:shadow-md transition">
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center text-2xl mb-4">
-              🎨
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              Нейро-Художник
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Студия генерации изображений, видео и иллюстраций. Создавайте фотореалистичные арты и графику за секунды.
-            </p>
-          </div>
-          <Link
-            to="/neuro-artist"
-            className="inline-flex items-center justify-center rounded-lg bg-purple-600 py-3 px-4 text-center font-medium text-white hover:bg-purple-700 transition"
-          >
-            Создать арт
-          </Link>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {tools.map((tool) => (
+            <Link
+              key={tool.path}
+              to={tool.path}
+              className="group p-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 hover:border-blue-500 dark:hover:border-blue-500 transition shadow-sm hover:shadow-md flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                    {tool.title}
+                  </h3>
+                  <span className="text-xs px-2.5 py-1 rounded-md font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                    {tool.tag}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {tool.desc}
+                </p>
+              </div>
 
-        {/* Карточка 3: Нейро-Академия */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-default dark:border-gray-800 dark:bg-gray-900 flex flex-col justify-between hover:shadow-md transition">
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center text-2xl mb-4">
-              🧸
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              Нейро-Академия
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Образовательный хаб для всех возрастов: интерактивный «Нейро-Малыш», развитие логики с «Нейро-Гением» и «Нейро-Репетитор».
-            </p>
-          </div>
-          <Link
-            to="/neuro-malysh"
-            className="inline-flex items-center justify-center rounded-lg bg-amber-600 py-3 px-4 text-center font-medium text-white hover:bg-amber-700 transition"
-          >
-            Перейти к обучению
-          </Link>
+              <div className="mt-6 flex items-center text-sm font-semibold text-blue-600 dark:text-blue-400">
+                Открыть инструмент &rarr;
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
