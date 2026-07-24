@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-// --- НАСТРОЙКИ ПОДКЛЮЧЕНИЯ К СЕРВЕРУ ---
 const API_BASE = "http://83.217.202.227:8001/api";
-const USER_ID = 233876992; // Твой VK ID
-const BOT_TOKEN = "SuperSecret_987654321_Token"; // Вставь токен из .env файла бэкенда
+const USER_ID = 233876992;
+const BOT_TOKEN = "SuperSecret_987654321_Token"; // Укажи свой токен
 
 type CategoryType = "photo" | "video" | "business";
 
@@ -25,7 +24,9 @@ export default function NeuroArtist() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [currentResultUrl, setCurrentResultUrl] = useState<string | null>(null);
 
-  // История генераций
+  // Для модального окна просмотра картинки во весь экран
+  const [modalImage, setModalImage] = useState<string | null>(null);
+
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const modesByCategory = {
@@ -51,10 +52,22 @@ export default function NeuroArtist() {
 
   const currentModes = modesByCategory[activeCategory];
 
-  // Обработка загрузки файлов
+  // Конвертация файла в Base64 для честной передачи картинки на бэкенд
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const [rawFiles, setRawFiles] = useState<File[]>([]);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
+      setRawFiles((prev) => [...prev, ...filesArray]);
       const newImages = filesArray.map((file) => URL.createObjectURL(file));
       setSelectedImages((prev) => [...prev, ...newImages]);
     }
@@ -62,10 +75,10 @@ export default function NeuroArtist() {
 
   const handleRemoveImage = (index: number) => {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setRawFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Опрос сервера на статус готовности
-  const checkStatus = async (taskId: string, modeObjName: string) => {
+  const checkStatus = async (taskId: string, modeObjName: string, base64Images: string[]) => {
     try {
       const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${USER_ID}`, {
         headers: { "X-Bot-Token": BOT_TOKEN },
@@ -76,13 +89,12 @@ export default function NeuroArtist() {
         setCurrentResultUrl(finalUrl);
         setIsGenerating(false);
 
-        // Добавляем в историю
         const newItem: HistoryItem = {
           id: taskId,
           modeName: modeObjName,
           prompt: prompt || "Генерация по изображению",
           date: "Только что",
-          images: [...selectedImages],
+          images: base64Images.length > 0 ? base64Images : selectedImages,
           resultUrl: finalUrl,
         };
         setHistory((prev) => [newItem, ...prev]);
@@ -90,8 +102,7 @@ export default function NeuroArtist() {
         alert("Ошибка генерации: " + (res.data.error || "Неизвестная ошибка"));
         setIsGenerating(false);
       } else {
-        // Опрашиваем сервер каждые 3 секунды
-        setTimeout(() => checkStatus(taskId, modeObjName), 3000);
+        setTimeout(() => checkStatus(taskId, modeObjName, base64Images), 3000);
       }
     } catch (e) {
       console.error("Ошибка проверки статуса:", e);
@@ -99,7 +110,6 @@ export default function NeuroArtist() {
     }
   };
 
-  // Запуск реальной генерации
   const handleGenerate = async () => {
     if (!prompt.trim() && activeMode !== "gfpgan" && selectedImages.length === 0) return;
 
@@ -110,13 +120,16 @@ export default function NeuroArtist() {
     const modeName = currentModeObj?.name || "Генерация";
 
     try {
+      // Преобразуем загруженные фото в формат для сервера
+      const base64Images = await Promise.all(rawFiles.map((file) => convertFileToBase64(file)));
+
       const response = await axios.post(
         `${API_BASE}/generate`,
         {
           user_id: USER_ID,
           model: activeMode,
           prompt: prompt,
-          image_urls: [], // Для передачи базовых URL из внешних источников
+          image_urls: base64Images, // ТЕПЕРЬ ПЕРЕДАЕМ ФОТО НА СЕРВЕР!
         },
         {
           headers: { "X-Bot-Token": BOT_TOKEN },
@@ -124,20 +137,38 @@ export default function NeuroArtist() {
       );
 
       if (response.data.success && response.data.task_id) {
-        checkStatus(response.data.task_id, modeName);
+        checkStatus(response.data.task_id, modeName, base64Images);
       } else {
         alert("Не удалось создать задачу на сервере");
         setIsGenerating(false);
       }
     } catch (e) {
-      console.error("Ошибка отправки генерации:", e);
+      console.error("Ошибка генерации:", e);
       alert("Ошибка подключения к бэкенду или недостаточно кредитов.");
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+      {/* Модальное окно просмотра медиа во весь экран */}
+      {modalImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer"
+          onClick={() => setModalImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl">
+            <img src={modalImage} alt="Во весь экран" className="max-w-full max-h-[90vh] object-contain rounded-2xl" />
+            <button
+              onClick={() => setModalImage(null)}
+              className="absolute top-3 right-3 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Левая колонка — Панель управления */}
       <div className="lg:col-span-2 space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
@@ -148,7 +179,6 @@ export default function NeuroArtist() {
             Выберите категорию, режим и настройте параметры запроса.
           </p>
 
-          {/* Табы категорий */}
           <div className="flex border-b border-gray-200 dark:border-gray-800 mt-6 gap-6">
             {[
               { id: "photo", label: "Фото и Арт" },
@@ -172,7 +202,6 @@ export default function NeuroArtist() {
             ))}
           </div>
 
-          {/* Сетка режимов */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             {currentModes.map((mode) => (
               <button
@@ -198,7 +227,7 @@ export default function NeuroArtist() {
           </div>
         </div>
 
-        {/* Настройки и Загрузка Изображений */}
+        {/* Настройки и Загрузка */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
@@ -218,7 +247,6 @@ export default function NeuroArtist() {
               <p className="text-xs text-gray-400 mt-1">Поддерживаются JPG, PNG, WEBP</p>
             </label>
 
-            {/* Предпросмотр загруженных фото */}
             {selectedImages.length > 0 && (
               <div className="flex flex-wrap gap-3 mt-4">
                 {selectedImages.map((src, index) => (
@@ -236,7 +264,6 @@ export default function NeuroArtist() {
             )}
           </div>
 
-          {/* Промпт */}
           {activeMode !== "gfpgan" && (
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
@@ -261,30 +288,24 @@ export default function NeuroArtist() {
           </button>
         </div>
 
-        {/* Окно результатов текущей генерации */}
+        {/* Окно текущего результата */}
         {currentResultUrl && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 text-center">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
               Результат готов
             </h3>
-            {currentResultUrl.endsWith(".mp4") ? (
-              <video src={currentResultUrl} controls className="mx-auto rounded-xl max-h-[500px]" />
-            ) : (
-              <img src={currentResultUrl} alt="Результат" className="mx-auto rounded-xl max-h-[500px] object-contain" />
-            )}
-            <a
-              href={currentResultUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block mt-4 text-sm font-semibold text-blue-600 dark:text-blue-400 underline"
-            >
-              Открыть в полном размере
-            </a>
+            <img
+              src={currentResultUrl}
+              alt="Результат"
+              onClick={() => setModalImage(currentResultUrl)}
+              className="mx-auto rounded-xl max-h-[500px] object-contain cursor-pointer hover:opacity-95 transition"
+            />
+            <p className="text-xs text-gray-400 mt-2">Нажмите на картинку, чтобы открыть во весь экран</p>
           </div>
         )}
       </div>
 
-      {/* Правая колонка — История генераций */}
+      {/* Правая колонка — Улучшенная История генераций */}
       <div className="space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
           <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
@@ -294,11 +315,11 @@ export default function NeuroArtist() {
           {history.length === 0 ? (
             <p className="text-xs text-gray-400">История пока пуста. Запустите первую генерацию!</p>
           ) : (
-            <div className="space-y-4 max-h-[700px] overflow-y-auto pr-1">
+            <div className="space-y-4 max-h-[750px] overflow-y-auto pr-1">
               {history.map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-2"
+                  className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3"
                 >
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-blue-600 dark:text-blue-400">
@@ -306,16 +327,23 @@ export default function NeuroArtist() {
                     </span>
                     <span className="text-gray-400">{item.date}</span>
                   </div>
-                  <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-3">
+
+                  {/* Полный промпт без обрезки */}
+                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                     {item.prompt}
                   </p>
+
+                  {/* Интерактивное фото результата (Клик для увеличения!) */}
                   {item.resultUrl && (
-                    <div className="pt-2">
-                      {item.resultUrl.endsWith(".mp4") ? (
-                        <video src={item.resultUrl} className="w-full h-32 object-cover rounded-lg" />
-                      ) : (
-                        <img src={item.resultUrl} alt="Результат" className="w-full h-32 object-cover rounded-lg" />
-                      )}
+                    <div className="relative group cursor-pointer" onClick={() => setModalImage(item.resultUrl!)}>
+                      <img
+                        src={item.resultUrl}
+                        alt="Результат"
+                        className="w-full h-48 object-cover rounded-xl border border-gray-200 dark:border-gray-700 group-hover:opacity-90 transition"
+                      />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition rounded-xl flex items-center justify-center text-white text-xs font-semibold">
+                        Увеличить 🔍
+                      </div>
                     </div>
                   )}
                 </div>
