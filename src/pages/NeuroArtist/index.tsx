@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const API_BASE = "http://83.217.202.227:8001/api";
@@ -26,7 +26,26 @@ export default function NeuroArtist() {
   const [currentResultUrl, setCurrentResultUrl] = useState<string | null>(null);
 
   const [modalMedia, setModalMedia] = useState<string | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  // 1. Автоматическая загрузка истории из localStorage
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("neuro_artist_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Ошибка чтения истории из localStorage:", e);
+      return [];
+    }
+  });
+
+  // 2. Сохранение истории в localStorage при изменениях
+  useEffect(() => {
+    try {
+      localStorage.setItem("neuro_artist_history", JSON.stringify(history));
+    } catch (e) {
+      console.error("Ошибка сохранения истории в localStorage:", e);
+    }
+  }, [history]);
 
   const modesByCategory = {
     photo: [
@@ -80,7 +99,6 @@ export default function NeuroArtist() {
     setRawFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Проверка формата медиа
   const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
   const isAudioUrl = (url: string) => url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
 
@@ -99,7 +117,7 @@ export default function NeuroArtist() {
           id: taskId,
           modeName: modeObjName,
           prompt: prompt || "Генерация медиа",
-          date: "Только что",
+          date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           images: base64Images.length > 0 ? base64Images : selectedImages,
           resultUrl: finalUrl,
         };
@@ -157,9 +175,21 @@ export default function NeuroArtist() {
     }
   };
 
+  const handleClearHistory = () => {
+    if (window.confirm("Удалить всю историю генераций?")) {
+      setHistory([]);
+      localStorage.removeItem("neuro_artist_history");
+    }
+  };
+
+  // Удаление конкретного элемента из истории
+  const handleDeleteHistoryItem = (id: string) => {
+    setHistory((prev) => prev.filter((item) => item.id !== id));
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
-      {/* Модальное окно просмотра во весь экран */}
+      {/* Модальное окно просмотра */}
       {modalMedia && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer"
@@ -323,7 +353,7 @@ export default function NeuroArtist() {
           </button>
         </div>
 
-        {/* Результат с полноценным плеером для видео */}
+        {/* Результат */}
         {currentResultUrl && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 text-center">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
@@ -362,9 +392,19 @@ export default function NeuroArtist() {
       {/* Правая колонка — История */}
       <div className="space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
-            История генераций
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+              История генераций
+            </h3>
+            {history.length > 0 && (
+              <button
+                onClick={handleClearHistory}
+                className="text-xs font-semibold text-gray-400 hover:text-red-500 transition"
+              >
+                Очистить всё
+              </button>
+            )}
+          </div>
 
           {history.length === 0 ? (
             <p className="text-xs text-gray-400">История пока пуста. Запустите первую генерацию!</p>
@@ -373,13 +413,23 @@ export default function NeuroArtist() {
               {history.map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3"
+                  className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3 relative group"
                 >
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-blue-600 dark:text-blue-400">
                       {item.modeName}
                     </span>
-                    <span className="text-gray-400">{item.date}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">{item.date}</span>
+                      {/* Кнопка точечного удаления элемента */}
+                      <button
+                        onClick={() => handleDeleteHistoryItem(item.id)}
+                        className="text-gray-400 hover:text-red-500 font-bold transition px-1"
+                        title="Удалить из истории"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
