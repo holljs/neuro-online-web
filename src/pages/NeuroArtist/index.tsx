@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "http://83.217.202.227:8001/api";
+const API_BASE = "/api"; // <-- Заменили на чистый относительный путь Nginx!
 const USER_ID = 233876992;
-const BOT_TOKEN = "SuperSecret_987654321_Token"; // Проверь свой BOT_SECRET_TOKEN из .env
+const BOT_TOKEN = "SuperSecret_987654321_Token"; // Убедись, что токен совпадает с .env на сервере
 
 type CategoryType = "photo" | "video" | "audio" | "business";
 
