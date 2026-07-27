@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "/api"; // <-- Заменили на чистый относительный путь Nginx!
-const USER_ID = 233876992;
-const BOT_TOKEN = "SuperSecret_987654321_Token"; // Убедись, что токен совпадает с .env на сервере
+const API_BASE = "/api";
+const BOT_TOKEN = "SuperSecret_987654321_Token";
 
 type CategoryType = "photo" | "video" | "audio" | "business";
 
@@ -27,23 +26,26 @@ export default function NeuroArtist() {
 
   const [modalMedia, setModalMedia] = useState<string | null>(null);
 
-  // 1. Автоматическая загрузка истории из localStorage
+  // Динамический USER_ID из localStorage
+  const userId = parseInt(localStorage.getItem("user_id") || "233876992");
+
+  // 1. Загрузка истории
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     try {
       const saved = localStorage.getItem("neuro_artist_history");
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Ошибка чтения истории из localStorage:", e);
+      console.error("Ошибка чтения истории:", e);
       return [];
     }
   });
 
-  // 2. Сохранение истории в localStorage при изменениях
+  // 2. Сохранение истории
   useEffect(() => {
     try {
       localStorage.setItem("neuro_artist_history", JSON.stringify(history));
     } catch (e) {
-      console.error("Ошибка сохранения истории в localStorage:", e);
+      console.error("Ошибка сохранения истории:", e);
     }
   }, [history]);
 
@@ -104,7 +106,7 @@ export default function NeuroArtist() {
 
   const checkStatus = async (taskId: string, modeObjName: string, base64Images: string[]) => {
     try {
-      const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${USER_ID}`, {
+      const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${userId}`, {
         headers: { "X-Bot-Token": BOT_TOKEN },
       });
 
@@ -147,7 +149,7 @@ export default function NeuroArtist() {
       const base64Images = await Promise.all(rawFiles.map((file) => convertFileToBase64(file)));
 
       const payload: any = {
-        user_id: USER_ID,
+        user_id: userId,
         model: activeMode,
         prompt: prompt,
         image_urls: base64Images,
@@ -182,7 +184,6 @@ export default function NeuroArtist() {
     }
   };
 
-  // Удаление конкретного элемента из истории
   const handleDeleteHistoryItem = (id: string) => {
     setHistory((prev) => prev.filter((item) => item.id !== id));
   };
@@ -310,22 +311,34 @@ export default function NeuroArtist() {
             </div>
           )}
 
+          {/* Аккуратная форма стиля музыки */}
           {activeMode === "music" && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
-                Выберите стиль музыки
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-gray-500 uppercase">
+                Стиль музыки (выберите или введите свой)
               </label>
-              <select
-                value={stylePrompt}
-                onChange={(e) => setStylePrompt(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-              >
-                <option value="Романтичный Поп" className="dark:bg-gray-900">🎹 Романтичный Поп</option>
-                <option value="Эпичный Рок" className="dark:bg-gray-900">🎸 Эпичный Рок</option>
-                <option value="Хип-Хоп и Рэп" className="dark:bg-gray-900">🎤 Хип-Хоп / Рэп</option>
-                <option value="Расслабляющий Джаз" className="dark:bg-gray-900">🎷 Расслабляющий Джаз</option>
-                <option value="Кинематографичный Оркестр" className="dark:bg-gray-900">🎻 Кинематографичный</option>
-              </select>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  onChange={(e) => setStylePrompt(e.target.value)}
+                  className="w-full sm:w-1/2 rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="" className="dark:bg-gray-900">✨ Готовые пресеты...</option>
+                  <option value="Романтичный Поп" className="dark:bg-gray-900">🎹 Романтичный Поп</option>
+                  <option value="Эпичный Рок" className="dark:bg-gray-900">🎸 Эпичный Рок</option>
+                  <option value="Хип-Хоп и Рэп" className="dark:bg-gray-900">🎤 Хип-Хоп / Рэп</option>
+                  <option value="Расслабляющий Джаз" className="dark:bg-gray-900">🎷 Расслабляющий Джаз</option>
+                  <option value="Synthwave 80s" className="dark:bg-gray-900">🌆 Synthwave 80s</option>
+                  <option value="Кинематографичный Оркестр" className="dark:bg-gray-900">🎻 Кинематографичный</option>
+                </select>
+
+                <input
+                  type="text"
+                  value={stylePrompt}
+                  onChange={(e) => setStylePrompt(e.target.value)}
+                  placeholder="Свой стиль (например: Lo-Fi, female vocal)"
+                  className="w-full sm:w-1/2 rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
             </div>
           )}
 
@@ -394,52 +407,48 @@ export default function NeuroArtist() {
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-              История генераций
+              {/* Правая колонка — Последний результат и Ссылка в Архив */}
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+              Последний результат
             </h3>
-            {history.length > 0 && (
-              <button
-                onClick={handleClearHistory}
-                className="text-xs font-semibold text-gray-400 hover:text-red-500 transition"
-              >
-                Очистить всё
-              </button>
-            )}
+            <a
+              href="/profile"
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition"
+            >
+              <span>Вся история</span>
+              <span>→</span>
+            </a>
           </div>
 
           {history.length === 0 ? (
-            <p className="text-xs text-gray-400">История пока пуста. Запустите первую генерацию!</p>
+            <div className="py-8 text-center text-gray-400 text-xs">
+              <p className="mb-1 text-sm font-semibold text-gray-500">История пуста</p>
+              <p>Создайте вашу первую картинку, видео или трек!</p>
+            </div>
           ) : (
-            <div className="space-y-4 max-h-[750px] overflow-y-auto pr-1">
-              {history.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3 relative group"
-                >
+            /* Показываем ТОЛЬКО 1 САМУЮ СВЕЖУЮ ГЕНЕРАЦИЮ */
+            (() => {
+              const item = history[0];
+              return (
+                <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3 relative">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-blue-600 dark:text-blue-400">
                       {item.modeName}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">{item.date}</span>
-                      {/* Кнопка точечного удаления элемента */}
-                      <button
-                        onClick={() => handleDeleteHistoryItem(item.id)}
-                        className="text-gray-400 hover:text-red-500 font-bold transition px-1"
-                        title="Удалить из истории"
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    <span className="text-gray-400">{item.date}</span>
                   </div>
 
-                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap font-medium">
                     {item.prompt}
                   </p>
 
                   {item.resultUrl && (
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       {isVideoUrl(item.resultUrl) ? (
-                        <video src={item.resultUrl} controls className="w-full h-48 object-cover rounded-xl" />
+                        <video src={item.resultUrl} controls className="w-full h-56 object-cover rounded-xl shadow-sm" />
                       ) : isAudioUrl(item.resultUrl) ? (
                         <audio src={item.resultUrl} controls className="w-full" />
                       ) : (
@@ -447,27 +456,34 @@ export default function NeuroArtist() {
                           src={item.resultUrl}
                           alt="Результат"
                           onClick={() => setModalMedia(item.resultUrl!)}
-                          className="w-full h-48 object-cover rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer"
+                          className="w-full h-56 object-cover rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer shadow-sm hover:opacity-95 transition"
                         />
                       )}
                       
-                      <a
-                        href={item.resultUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        download
-                        className="inline-block mt-2 text-[11px] font-semibold text-blue-600 dark:text-blue-400 underline"
-                      >
-                        Скачать файл 📥
-                      </a>
+                      <div className="flex justify-between items-center pt-1">
+                        <a
+                          href={item.resultUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          download
+                          className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                        >
+                          <span>Скачать файл</span>
+                          <span>📥</span>
+                        </a>
+
+                        <a
+                          href="/profile"
+                          className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+                        >
+                          Открыть в архиве 📂
+                        </a>
+                      </div>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+              );
+            })()
           )}
         </div>
       </div>
-    </div>
-  );
-}
