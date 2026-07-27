@@ -304,7 +304,7 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
+        {/* Рекламный виджет убран */}
       </div>
     </aside>
   );
