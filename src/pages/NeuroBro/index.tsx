@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
-const API_BASE = "http://83.217.202.227:8002/api/bro";
-const USER_ID = 233876992;
+const API_BASE = "/api/bro";
+const USER_ID = parseInt(localStorage.getItem("user_id") || "233876992");
 const BOT_TOKEN = "SuperSecret_987654321_Token"; // Проверь свой BOT_SECRET_TOKEN из .env
 
 type Message = {
