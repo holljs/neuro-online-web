@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 
 const API_BASE = "/api";
 
 export default function UserProfiles() {
   const [user, setUser] = useState<{ id: number; balance: number } | null>(null);
+  const [inputUserId, setInputUserId] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const savedUserId = localStorage.getItem("user_id");
@@ -14,20 +16,39 @@ export default function UserProfiles() {
   }, []);
 
   const fetchUserData = async (userId: number) => {
+    setLoading(true);
+    setError("");
     try {
-      const res = await axios.get(`${API_BASE}/user/${userId}`);
-      if (res.data.success) {
-        setUser({ id: userId, balance: res.data.balance });
+      const res = await fetch(`${API_BASE}/user/${userId}`);
+      const data = await res.json();
+      if (data.success) {
+        setUser({ id: userId, balance: data.balance });
         localStorage.setItem("user_id", userId.toString());
+      } else {
+        setError("Не удалось загрузить данные пользователя.");
       }
     } catch (e) {
       console.error(e);
+      setError("Ошибка соединения с сервером.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanId = inputUserId.replace(/\D/g, ""); // Оставляем только цифры
+    if (cleanId) {
+      fetchUserData(parseInt(cleanId));
+    } else {
+      setError("Введите корректный цифровой VK ID (например, 233876992)");
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("user_id");
     setUser(null);
+    setInputUserId("");
   };
 
   return (
@@ -52,7 +73,6 @@ export default function UserProfiles() {
               </div>
             </div>
 
-            {/* --- КНОПКИ ДЕЙСТВИЙ И ВОЗВРАТА --- */}
             <div className="grid grid-cols-1 gap-3">
               <a
                 href={`/pay.html?app=artist&user_id=${user.id}`}
@@ -63,7 +83,6 @@ export default function UserProfiles() {
                 💎 Пополнить баланс
               </a>
 
-              {/* Кнопка возврата на главную */}
               <a
                 href="/"
                 className="w-full py-3.5 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-bold text-sm hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2"
@@ -80,9 +99,27 @@ export default function UserProfiles() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-500">Укажите ваш ID для входа</p>
-          </div>
+          /* Форма входа по VK ID */
+          <form onSubmit={handleLogin} className="space-y-4 py-2">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Введите ваш VK ID для входа в личный кабинет:
+            </p>
+            <input
+              type="text"
+              placeholder="Например: 233876992"
+              value={inputUserId}
+              onChange={(e) => setInputUserId(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg font-mono"
+            />
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition shadow-md"
+            >
+              {loading ? "Загрузка..." : "Войти в кабинет"}
+            </button>
+          </form>
         )}
       </div>
     </div>
