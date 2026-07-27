@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 const API_BASE = "/api/bro";
-const USER_ID = parseInt(localStorage.getItem("user_id") || "233876992");
-const BOT_TOKEN = "SuperSecret_987654321_Token"; // Проверь свой BOT_SECRET_TOKEN из .env
+const BOT_TOKEN = "SuperSecret_987654321_Token";
 
 type Message = {
   role: "user" | "assistant";
@@ -19,6 +18,13 @@ export default function NeuroBro() {
   const [selectedPersona, setSelectedPersona] = useState("default");
   
   const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
+  
+  // Состояние для красивого модального окна подтверждения очистки
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+
+  // Получаем актуальный user_id из localStorage
+  const userId = parseInt(localStorage.getItem("user_id") || "233876992");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +72,7 @@ export default function NeuroBro() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/history?user_id=${USER_ID}`, {
+        const res = await axios.get(`${API_BASE}/history?user_id=${userId}`, {
           headers: { "X-Bot-Token": BOT_TOKEN },
         });
         if (res.data.success && res.data.history) {
@@ -77,7 +83,7 @@ export default function NeuroBro() {
       }
     };
     fetchHistory();
-  }, []);
+  }, [userId]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -95,18 +101,24 @@ export default function NeuroBro() {
     };
   };
 
-  const handleClearHistory = async () => {
-    if (!window.confirm("Очистить историю диалога и сбросить память нейросети?")) return;
-
+  // Функция очистки истории
+  const executeClearHistory = async () => {
+    setIsClearing(true);
     try {
       await axios.post(
         `${API_BASE}/chat/clear`,
-        { user_id: USER_ID },
+        { user_id: userId },
         { headers: { "X-Bot-Token": BOT_TOKEN } }
       );
       setMessages([]);
+      setShowConfirmModal(false);
     } catch (e) {
-      alert("Ошибка очистки чата.");
+      console.error("Ошибка очистки чата:", e);
+      // В случае ошибки на бэке всё равно сбрасываем локально для удобства
+      setMessages([]);
+      setShowConfirmModal(false);
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -126,7 +138,7 @@ export default function NeuroBro() {
       const res = await axios.post(
         `${API_BASE}/chat`,
         {
-          user_id: USER_ID,
+          user_id: userId,
           prompt: userText,
           model_type: selectedModel,
           persona: selectedPersona,
@@ -153,7 +165,7 @@ export default function NeuroBro() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] gap-3">
+    <div className="flex flex-col h-[calc(100vh-120px)] gap-3 relative">
       {/* Верхняя панель */}
       <div className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5 bg-gray-100/70 dark:bg-gray-800 p-1 rounded-xl">
@@ -192,7 +204,7 @@ export default function NeuroBro() {
           </select>
 
           <button
-            onClick={handleClearHistory}
+            onClick={() => setShowConfirmModal(true)}
             title="Очистить память диалога"
             className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
           >
@@ -246,8 +258,6 @@ export default function NeuroBro() {
 
       {/* Панель ввода */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-900 space-y-2 shadow-sm">
-        
-        {/* Превью картинки */}
         {attachedPreview && (
           <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-2 border border-blue-200 dark:border-blue-800">
             <img src={attachedPreview} alt="Превью" className="w-9 h-9 object-cover rounded-lg" />
@@ -305,6 +315,43 @@ export default function NeuroBro() {
           <span>{models.find((m) => m.id === selectedModel)?.hint}</span>
         </div>
       </div>
+
+      {/* Красивое стильное модальное окно подтверждения очистки */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-gray-100 dark:border-gray-800 text-center animate-in fade-in zoom-in duration-150">
+            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Очистить диалог?</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Это удалит всю историю переписки и сбросит контекст памяти нейросети.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={executeClearHistory}
+                disabled={isClearing}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition shadow-sm"
+              >
+                {isClearing ? "Очистка..." : "Да, очистить"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
