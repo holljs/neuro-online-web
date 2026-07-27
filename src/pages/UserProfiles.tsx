@@ -37,11 +37,11 @@ export default function UserProfiles() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanId = inputUserId.replace(/\D/g, ""); // Оставляем только цифры
+    const cleanId = inputUserId.replace(/\D/g, "");
     if (cleanId) {
       fetchUserData(parseInt(cleanId));
     } else {
-      setError("Введите корректный цифровой VK ID (например, 233876992)");
+      setError("Введите корректный цифровой VK ID");
     }
   };
 
@@ -60,6 +60,7 @@ export default function UserProfiles() {
 
         {user ? (
           <div className="space-y-6">
+            {/* Карточка баланса */}
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 flex justify-between items-center">
               <div className="text-left">
                 <p className="text-xs text-gray-500 uppercase font-semibold">Ваш профиль</p>
@@ -73,6 +74,7 @@ export default function UserProfiles() {
               </div>
             </div>
 
+            {/* Блок действий и быстрой навигации */}
             <div className="grid grid-cols-1 gap-3">
               <a
                 href={`/pay.html?app=artist&user_id=${user.id}`}
@@ -83,16 +85,29 @@ export default function UserProfiles() {
                 💎 Пополнить баланс
               </a>
 
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-2 text-left">
+                Перейти в сервисы:
+              </p>
+
+              {/* Переход в НейроХудожник */}
               <a
                 href="/"
-                className="w-full py-3.5 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-bold text-sm hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gray-900 text-white dark:bg-gray-800 font-semibold text-sm hover:opacity-90 transition flex items-center justify-center gap-2"
               >
-                🎨 Создавать картинки и видео
+                🎨 НейроХудожник (Картинки и Видео)
+              </a>
+
+              {/* Переход в НейроБро */}
+              <a
+                href="/neurobro"
+                className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center justify-center gap-2"
+              >
+                🤖 НейроБро (Чат-помощник)
               </a>
 
               <button
                 onClick={handleLogout}
-                className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                className="w-full py-2.5 mt-2 rounded-xl border border-transparent text-red-500 font-medium text-sm hover:bg-red-50 dark:hover:bg-red-950/30 transition"
               >
                 Выйти из аккаунта
               </button>
