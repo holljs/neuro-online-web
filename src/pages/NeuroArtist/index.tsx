@@ -29,7 +29,7 @@ export default function NeuroArtist() {
   // Динамический USER_ID из localStorage
   const userId = parseInt(localStorage.getItem("user_id") || "233876992");
 
-  // 1. Загрузка истории
+  // 1. Загрузка истории из localStorage
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     try {
       const saved = localStorage.getItem("neuro_artist_history");
@@ -40,7 +40,7 @@ export default function NeuroArtist() {
     }
   });
 
-  // 2. Сохранение истории
+  // 2. Сохранение истории в localStorage
   useEffect(() => {
     try {
       localStorage.setItem("neuro_artist_history", JSON.stringify(history));
@@ -177,17 +177,6 @@ export default function NeuroArtist() {
     }
   };
 
-  const handleClearHistory = () => {
-    if (window.confirm("Удалить всю историю генераций?")) {
-      setHistory([]);
-      localStorage.removeItem("neuro_artist_history");
-    }
-  };
-
-  const handleDeleteHistoryItem = (id: string) => {
-    setHistory((prev) => prev.filter((item) => item.id !== id));
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
       {/* Модальное окно просмотра */}
@@ -214,7 +203,7 @@ export default function NeuroArtist() {
 
       {/* Левая колонка — Панель управления */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
             Студия генерации
           </h2>
@@ -272,7 +261,7 @@ export default function NeuroArtist() {
         </div>
 
         {/* Форма запроса */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 space-y-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 space-y-4 shadow-sm">
           
           {["vip_mix", "seadream_mix", "ultra_photo", "gfpgan", "i2v", "wb_card", "fashion", "food", "furniture"].includes(activeMode) && (
             <div>
@@ -311,7 +300,7 @@ export default function NeuroArtist() {
             </div>
           )}
 
-          {/* Аккуратная форма стиля музыки */}
+          {/* Музыкальный стиль */}
           {activeMode === "music" && (
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase">
@@ -366,9 +355,9 @@ export default function NeuroArtist() {
           </button>
         </div>
 
-        {/* Результат */}
+        {/* Результат текущей генерации */}
         {currentResultUrl && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 text-center">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 text-center shadow-sm">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
               Результат готов
             </h3>
@@ -402,12 +391,7 @@ export default function NeuroArtist() {
         )}
       </div>
 
-      {/* Правая колонка — История */}
-      <div className="space-y-6">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-              {/* Правая колонка — Последний результат и Ссылка в Архив */}
+      {/* Правая колонка — Последняя генерация и Ссылка в Архив */}
       <div className="space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="flex justify-between items-center mb-4">
@@ -429,7 +413,6 @@ export default function NeuroArtist() {
               <p>Создайте вашу первую картинку, видео или трек!</p>
             </div>
           ) : (
-            /* Показываем ТОЛЬКО 1 САМУЮ СВЕЖУЮ ГЕНЕРАЦИЮ */
             (() => {
               const item = history[0];
               return (
@@ -487,3 +470,6 @@ export default function NeuroArtist() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
