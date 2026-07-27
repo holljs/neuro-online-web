@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // 🔥 Импортируем Link для быстрых переходов
 import axios from "axios";
 
 const API_BASE = "/api";
@@ -64,13 +63,13 @@ export default function UserProfiles() {
                 💎 Пополнить баланс
               </a>
 
-              {/* 🔥 Кнопка «Перейти к генерациям» */}
-              <Link
-                to="/"
+              {/* Кнопка возврата на главную */}
+              <a
+                href="/"
                 className="w-full py-3.5 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-bold text-sm hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2"
               >
                 🎨 Создавать картинки и видео
-              </Link>
+              </a>
 
               <button
                 onClick={handleLogout}
@@ -82,7 +81,7 @@ export default function UserProfiles() {
           </div>
         ) : (
           <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-500">Войдите в систему для управления балансом</p>
+            <p className="text-sm text-gray-500">Укажите ваш ID для входа</p>
           </div>
         )}
       </div>
