@@ -25,11 +25,11 @@ export default function NeuroArtist() {
   const [currentResultUrl, setCurrentResultUrl] = useState<string | null>(null);
 
   const [modalMedia, setModalMedia] = useState<string | null>(null);
+  const [isPromptExpanded, setIsPromptExpanded] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  // Динамический USER_ID из localStorage
   const userId = parseInt(localStorage.getItem("user_id") || "233876992");
 
-  // 1. Загрузка истории из localStorage
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     try {
       const saved = localStorage.getItem("neuro_artist_history");
@@ -40,7 +40,6 @@ export default function NeuroArtist() {
     }
   });
 
-  // 2. Сохранение истории в localStorage
   useEffect(() => {
     try {
       localStorage.setItem("neuro_artist_history", JSON.stringify(history));
@@ -104,6 +103,12 @@ export default function NeuroArtist() {
   const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
   const isAudioUrl = (url: string) => url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
 
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  };
+
   const checkStatus = async (taskId: string, modeObjName: string, base64Images: string[]) => {
     try {
       const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${userId}`, {
@@ -119,7 +124,7 @@ export default function NeuroArtist() {
           id: taskId,
           modeName: modeObjName,
           prompt: prompt || "Генерация медиа",
-          date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
           images: base64Images.length > 0 ? base64Images : selectedImages,
           resultUrl: finalUrl,
         };
@@ -179,7 +184,7 @@ export default function NeuroArtist() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
-      {/* Полноэкранное модальное окно просмотра (z-[999999] перекрывает шапку) */}
+      {/* Полноэкранное модальное окно просмотра */}
       {modalMedia && (
         <div
           className="fixed inset-0 z-[999999] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md cursor-pointer"
@@ -262,7 +267,6 @@ export default function NeuroArtist() {
 
         {/* Форма запроса */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 space-y-4 shadow-sm">
-          
           {["vip_mix", "seadream_mix", "ultra_photo", "gfpgan", "i2v", "wb_card", "fashion", "food", "furniture"].includes(activeMode) && (
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
@@ -300,7 +304,6 @@ export default function NeuroArtist() {
             </div>
           )}
 
-          {/* Музыкальный стиль */}
           {activeMode === "music" && (
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase">
@@ -390,7 +393,7 @@ export default function NeuroArtist() {
         )}
       </div>
 
-      {/* Правая колонка — Последний результат */}
+      {/* Правая колонка — Последний результат со сворачиванием промпта */}
       <div className="space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="flex justify-between items-center mb-4">
@@ -414,18 +417,41 @@ export default function NeuroArtist() {
           ) : (
             (() => {
               const item = history[0];
+              const isLongPrompt = item.prompt.length > 100;
               return (
                 <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3 relative">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-blue-600 dark:text-blue-400">
                       {item.modeName}
                     </span>
-                    <span className="text-gray-400">{item.date}</span>
+                    <span className="text-gray-400 text-[10px]">{item.date}</span>
                   </div>
 
-                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap font-medium">
-                    {item.prompt}
-                  </p>
+                  {/* Блок промпта с кнопкой копирования и свертыванием */}
+                  <div className="space-y-1.5 bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200/80 dark:border-gray-800">
+                    <p className={`text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium ${!isPromptExpanded ? "line-clamp-3" : ""}`}>
+                      "{item.prompt}"
+                    </p>
+
+                    <div className="flex items-center justify-between pt-1 text-[11px]">
+                      {isLongPrompt && (
+                        <button
+                          onClick={() => setIsPromptExpanded(!isPromptExpanded)}
+                          className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold flex items-center gap-1"
+                        >
+                          <span>{isPromptExpanded ? "Свернуть" : "Развернуть"}</span>
+                          <span>{isPromptExpanded ? "↑" : "↓"}</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleCopyText(item.prompt)}
+                        className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {copiedPrompt ? "✓ Скопировано" : "📋 Скопировать"}
+                      </button>
+                    </div>
+                  </div>
 
                   {item.resultUrl && (
                     <div className="pt-2 space-y-3">
