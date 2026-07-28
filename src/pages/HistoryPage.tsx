@@ -14,6 +14,7 @@ export default function HistoryPage() {
   const [activeTab, setActiveTab] = useState<"photo" | "video" | "audio">("photo");
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     try {
@@ -38,6 +39,10 @@ export default function HistoryPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
   const isAudioUrl = (url: string) => url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
 
@@ -59,14 +64,14 @@ export default function HistoryPage() {
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
         
-        {/* Шапка */}
+        {/* Шапка истории */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-gray-100 dark:border-gray-800">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               История генераций
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Все ваши созданные изображения, видеоклипы и треки
+              Ваша галерея медиафайлов и промптов
             </p>
           </div>
 
@@ -115,7 +120,7 @@ export default function HistoryPage() {
           </button>
         </div>
 
-        {/* Сетка результатов */}
+        {/* Сетка результативных карточек (Фотогалерея) */}
         {filteredHistory.length === 0 ? (
           <div className="py-16 text-center text-gray-400 text-xs">
             <p className="font-medium text-gray-600 dark:text-gray-300 text-sm mb-1">
@@ -127,72 +132,91 @@ export default function HistoryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredHistory.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-4 flex flex-col justify-between space-y-3"
-              >
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-gray-900 dark:text-white">
-                      {item.modeName}
-                    </span>
-                    <span className="text-gray-400 text-[10px]">{item.date}</span>
+            {filteredHistory.map((item) => {
+              const isExpanded = !!expandedIds[item.id];
+              const isLongPrompt = item.prompt.length > 80;
+
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-3.5 flex flex-col justify-between space-y-3"
+                >
+                  <div className="space-y-2.5">
+                    {/* Заголовок карточки с датой */}
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-gray-900 dark:text-white">
+                        {item.modeName}
+                      </span>
+                      <span className="text-gray-400 text-[10px] font-mono">{item.date}</span>
+                    </div>
+
+                    {/* Показ Медиа */}
+                    {item.resultUrl && (
+                      <div>
+                        {isVideoUrl(item.resultUrl) ? (
+                          <video src={item.resultUrl} controls className="w-full h-48 object-cover rounded-lg" />
+                        ) : isAudioUrl(item.resultUrl) ? (
+                          <div className="py-4 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
+                            <audio src={item.resultUrl} controls className="w-full" />
+                          </div>
+                        ) : (
+                          <img
+                            src={item.resultUrl}
+                            alt="Результат"
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Сворачиваемый блок с Промптом */}
+                    <div className="bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-200/70 dark:border-gray-800 space-y-1">
+                      <p className={`text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic ${!isExpanded ? "line-clamp-2" : ""}`}>
+                        "{item.prompt}"
+                      </p>
+
+                      <div className="flex items-center justify-between pt-1 text-[11px]">
+                        {isLongPrompt && (
+                          <button
+                            onClick={() => toggleExpand(item.id)}
+                            className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold"
+                          >
+                            {isExpanded ? "Свернуть ↑" : "Развернуть ↓"}
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleCopyPrompt(item.prompt, item.id)}
+                          className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {copiedId === item.id ? "✓ Скопировано" : "📋 Скопировать"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
-                  {item.resultUrl && (
-                    <div>
-                      {isVideoUrl(item.resultUrl) ? (
-                        <video src={item.resultUrl} controls className="w-full h-48 object-cover rounded-lg" />
-                      ) : isAudioUrl(item.resultUrl) ? (
-                        <div className="py-4 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
-                          <audio src={item.resultUrl} controls className="w-full" />
-                        </div>
-                      ) : (
-                        <img
-                          src={item.resultUrl}
-                          alt="Результат"
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Полный промпт без обрезки */}
-                  <div className="space-y-1.5 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-100 dark:border-gray-800">
-                    <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                      "{item.prompt}"
-                    </p>
-                    <button
-                      onClick={() => handleCopyPrompt(item.prompt, item.id)}
-                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline pt-1 block"
+                  {/* Нижняя панель скачивания / удаления */}
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
+                    <a
+                      href={item.resultUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      {copiedId === item.id ? "✓ Скопировано!" : "📋 Скопировать промпт"}
+                      Скачать файл
+                    </a>
+
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="text-gray-400 hover:text-red-500 font-medium transition"
+                    >
+                      Удалить
                     </button>
                   </div>
                 </div>
-
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
-                  <a
-                    href={item.resultUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    download
-                    className="font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                  >
-                    <span>Скачать</span>
-                    <span>📥</span>
-                  </a>
-
-                  <button
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="text-gray-400 hover:text-red-500 font-medium transition"
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
