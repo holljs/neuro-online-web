@@ -109,7 +109,7 @@ export default function NeuroArtist() {
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
-  const checkStatus = async (taskId: string, modeObjName: string, base64Images: string[]) => {
+  const checkStatus = async (taskId: string, modeObjName: string, base64Images: string[], currentPrompt: string) => {
     try {
       const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${userId}`, {
         headers: { "X-Bot-Token": BOT_TOKEN },
@@ -120,10 +120,15 @@ export default function NeuroArtist() {
         setCurrentResultUrl(finalUrl);
         setIsGenerating(false);
 
+        // 🧹 Очищаем поля ввода после успешной генерации
+        setPrompt("");
+        setSelectedImages([]);
+        setRawFiles([]);
+
         const newItem: HistoryItem = {
           id: taskId,
           modeName: modeObjName,
-          prompt: prompt || "Генерация медиа",
+          prompt: currentPrompt || "Генерация медиа",
           date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
           images: base64Images.length > 0 ? base64Images : selectedImages,
           resultUrl: finalUrl,
@@ -133,7 +138,7 @@ export default function NeuroArtist() {
         alert("Ошибка генерации: " + (res.data.error || "Неизвестная ошибка"));
         setIsGenerating(false);
       } else {
-        setTimeout(() => checkStatus(taskId, modeObjName, base64Images), 3000);
+        setTimeout(() => checkStatus(taskId, modeObjName, base64Images, currentPrompt), 3000);
       }
     } catch (e) {
       console.error("Ошибка проверки статуса:", e);
@@ -149,6 +154,7 @@ export default function NeuroArtist() {
 
     const currentModeObj = currentModes.find((m) => m.id === activeMode);
     const modeName = currentModeObj?.name || "Генерация";
+    const promptBackup = prompt; // Запоминаем промпт для сохранения в историю
 
     try {
       const base64Images = await Promise.all(rawFiles.map((file) => convertFileToBase64(file)));
@@ -170,7 +176,7 @@ export default function NeuroArtist() {
       });
 
       if (response.data.success && response.data.task_id) {
-        checkStatus(response.data.task_id, modeName, base64Images);
+        checkStatus(response.data.task_id, modeName, base64Images, promptBackup);
       } else {
         alert("Не удалось создать задачу на сервере");
         setIsGenerating(false);
