@@ -20,6 +20,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import NeuroBro from "./pages/NeuroBro";
 import NeuroArtist from "./pages/NeuroArtist";
+import HistoryPage from "./pages/HistoryPage";
 
 export default function App() {
   return (
@@ -27,11 +28,12 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
+          {/* Dashboard Layout (Страницы с боковым меню и шапкой) */}
           <Route element={<AppLayout />}>
-              <Route index path="/" element={<Home />} />
-              <Route path="/neuro-bro" element={<NeuroBro />} />
-              <Route path="/neuro-artist" element={<NeuroArtist />} />
+            <Route index path="/" element={<Home />} />
+            <Route path="/neuro-bro" element={<NeuroBro />} />
+            <Route path="/neuro-artist" element={<NeuroArtist />} />
+            <Route path="/history" element={<HistoryPage />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
