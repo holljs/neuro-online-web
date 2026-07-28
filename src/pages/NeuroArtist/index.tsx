@@ -179,21 +179,21 @@ export default function NeuroArtist() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
-      {/* Модальное окно просмотра */}
+      {/* Полноэкранное модальное окно просмотра (z-[999999] перекрывает шапку) */}
       {modalMedia && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer"
+          className="fixed inset-0 z-[999999] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md cursor-pointer"
           onClick={() => setModalMedia(null)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl">
+          <div className="relative max-w-5xl max-h-[92vh] overflow-hidden rounded-2xl flex items-center justify-center">
             {isVideoUrl(modalMedia) ? (
-              <video src={modalMedia} controls autoPlay className="max-w-full max-h-[90vh] rounded-2xl" />
+              <video src={modalMedia} controls autoPlay className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl" />
             ) : (
-              <img src={modalMedia} alt="Во весь экран" className="max-w-full max-h-[90vh] object-contain rounded-2xl" />
+              <img src={modalMedia} alt="Во весь экран" className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" />
             )}
             <button
               onClick={() => setModalMedia(null)}
-              className="absolute top-3 right-3 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold"
+              className="absolute top-4 right-4 bg-black/70 hover:bg-black text-white rounded-full w-9 h-9 flex items-center justify-center font-bold text-base transition shadow-lg border border-white/20"
             >
               ✕
             </button>
