@@ -71,7 +71,6 @@ export default function UserProfiles() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-        
         {/* Шапка ЛК */}
         <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-gray-800">
           <div>
@@ -159,7 +158,9 @@ export default function UserProfiles() {
 
                       <div className="text-3xl font-black text-gray-900 dark:text-white">
                         {user.balance}{" "}
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">кредитов</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          кредитов
+                        </span>
                       </div>
                     </div>
 
@@ -199,7 +200,9 @@ export default function UserProfiles() {
 
                       <div className="text-3xl font-black text-gray-900 dark:text-white">
                         {user.energy}{" "}
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">энергии</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          энергии
+                        </span>
                       </div>
                     </div>
 
@@ -276,7 +279,7 @@ export default function UserProfiles() {
             {/* Раздел Нейро-Художник */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                🎨 Нейро-Художник (Кредиты)
+                Нейро-Художник (Кредиты)
               </h3>
               <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
                 <table className="w-full text-left text-xs">
@@ -331,30 +334,30 @@ export default function UserProfiles() {
             {/* Раздел Нейро-Бро */}
             <div className="space-y-3 pt-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-                💬 Нейро-Бро (Энергия)
+                Нейро-Бро (Энергия)
               </h3>
               <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold border-b border-gray-200 dark:border-gray-800">
                     <tr>
-                      <th className="p-3">Модель ИИ</th>
+                      <th className="p-3">Режим ИИ</th>
                       <th className="p-3">Назначение</th>
                       <th className="p-3 text-right">Стоимость</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-600 dark:text-gray-300">
                     <tr>
-                      <td className="p-3 font-bold text-gray-900 dark:text-white">Быстрая (GPT-4o Mini)</td>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Быстрая</td>
                       <td className="p-3">Мгновенные ответы, диалоги, быстрый копирайтинг</td>
                       <td className="p-3 font-bold text-right text-purple-600 dark:text-purple-400">3 энергии</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-bold text-gray-900 dark:text-white">Думающая (Gemini Flash)</td>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Думающая</td>
                       <td className="p-3">Анализ фотографий, документов, развернутые тексты</td>
                       <td className="p-3 font-bold text-right text-purple-600 dark:text-purple-400">10 энергии</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-bold text-gray-900 dark:text-white">Про-Кодер (Gemini 3.1 Pro)</td>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Про-Кодер</td>
                       <td className="p-3">Сложная аналитика, написание кода, архитектура ПО</td>
                       <td className="p-3 font-bold text-right text-purple-600 dark:text-purple-400">50 энергии</td>
                     </tr>
@@ -375,7 +378,7 @@ export default function UserProfiles() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 space-y-2">
                 <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                  🎯 Какую модель Художника выбрать?
+                  Какую модель Художника выбрать?
                 </h3>
                 <p>• <strong>Нейро-Художник:</strong> Идеально для быстрых идей, концептов, аватарок и фэнтези.</p>
                 <p>• <strong>Ультра-Фото:</strong> Используйте для создания портретов, людей и реальных объектов, когда важна естественность кожи и освещения.</p>
@@ -385,17 +388,17 @@ export default function UserProfiles() {
 
               <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 space-y-2">
                 <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                  💡 Как работать с Нейро-Бро?
+                  Как работать с Нейро-Бро?
                 </h3>
-                <p>• <strong>Загрузка файлов:</strong> В режиме «Думающая» вы можете прикреплять фото, скриншоты или тексты для разбора.</p>
-                <p>• <strong>Программирование:</strong> Режим «Про-Кодер» видит контекст кода целиком и помогает находить баги и писать логику.</p>
-                <p>• <strong>История переписки:</strong> Сохраняется локально, вы можете продолжить контекст диалога в любой момент.</p>
+                <p>• <strong>Быстрая:</strong> Подходит для простого общения, вопросов и генерации коротких текстов.</p>
+                <p>• <strong>Думающая:</strong> Анализирует прикрепленные изображения, фото и сложные документы.</p>
+                <p>• <strong>Про-Кодер:</strong> Включает глубокий логический анализ, видит контекст кода и помогает находить ошибки.</p>
               </div>
             </div>
 
             <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 space-y-2">
               <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                ❓ Вопросы по оплате и балансу
+                Вопросы по оплате и балансу
               </h3>
               <p>Балансы <strong>Кредитов (Художник)</strong> и <strong>Энергии (Бро)</strong> разделены. При пополнении убедитесь, что выбрали нужный сервис. Покупка зачисляется мгновенно.</p>
               <p>
@@ -413,7 +416,6 @@ export default function UserProfiles() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
