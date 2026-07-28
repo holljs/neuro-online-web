@@ -10,7 +10,6 @@ import {
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import SidebarWidget from "./SidebarWidget";
 
 type NavItem = {
   name: string;
@@ -37,11 +36,17 @@ const navItems: NavItem[] = [
   },
 ];
 
+// Добавили пункт "История генераций"
 const othersItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
     name: "Личный кабинет",
     path: "/profile",
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "История генераций",
+    path: "/history",
   },
 ];
 
@@ -286,7 +291,7 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>
-            <div className="">
+            <div>
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
                   !isExpanded && !isHovered
@@ -304,7 +309,6 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
-        {/* Рекламный виджет убран */}
       </div>
     </aside>
   );
