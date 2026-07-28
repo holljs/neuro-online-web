@@ -13,6 +13,7 @@ export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"photo" | "video" | "audio">("photo");
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -29,6 +30,12 @@ export default function HistoryPage() {
     const updated = history.filter((item) => item.id !== id);
     setHistory(updated);
     localStorage.setItem("neuro_artist_history", JSON.stringify(updated));
+  };
+
+  const handleCopyPrompt = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
@@ -123,10 +130,10 @@ export default function HistoryPage() {
             {filteredHistory.map((item) => (
               <div
                 key={item.id}
-                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-3.5 flex flex-col justify-between space-y-3"
+                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-4 flex flex-col justify-between space-y-3"
               >
-                <div>
-                  <div className="flex justify-between items-center text-xs mb-2">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-gray-900 dark:text-white">
                       {item.modeName}
                     </span>
@@ -134,11 +141,11 @@ export default function HistoryPage() {
                   </div>
 
                   {item.resultUrl && (
-                    <div className="mb-2">
+                    <div>
                       {isVideoUrl(item.resultUrl) ? (
                         <video src={item.resultUrl} controls className="w-full h-48 object-cover rounded-lg" />
                       ) : isAudioUrl(item.resultUrl) ? (
-                        <div className="py-6 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
+                        <div className="py-4 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
                           <audio src={item.resultUrl} controls className="w-full" />
                         </div>
                       ) : (
@@ -151,20 +158,30 @@ export default function HistoryPage() {
                     </div>
                   )}
 
-                  <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 italic">
-                    "{item.prompt}"
-                  </p>
+                  {/* Полный промпт без обрезки */}
+                  <div className="space-y-1.5 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-100 dark:border-gray-800">
+                    <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                      "{item.prompt}"
+                    </p>
+                    <button
+                      onClick={() => handleCopyPrompt(item.prompt, item.id)}
+                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline pt-1 block"
+                    >
+                      {copiedId === item.id ? "✓ Скопировано!" : "📋 Скопировать промпт"}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-2.5 border-t border-gray-200/60 dark:border-gray-800 text-xs">
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
                   <a
                     href={item.resultUrl}
                     target="_blank"
                     rel="noreferrer"
                     download
-                    className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                    className="font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                   >
-                    Скачать
+                    <span>Скачать</span>
+                    <span>📥</span>
                   </a>
 
                   <button
