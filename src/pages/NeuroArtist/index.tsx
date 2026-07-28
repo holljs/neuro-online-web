@@ -311,13 +311,13 @@ export default function NeuroArtist() {
                   onChange={(e) => setStylePrompt(e.target.value)}
                   className="w-full sm:w-1/2 rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                 >
-                  <option value="" className="dark:bg-gray-900">✨ Готовые пресеты...</option>
-                  <option value="Романтичный Поп" className="dark:bg-gray-900">🎹 Романтичный Поп</option>
-                  <option value="Эпичный Рок" className="dark:bg-gray-900">🎸 Эпичный Рок</option>
-                  <option value="Хип-Хоп и Рэп" className="dark:bg-gray-900">🎤 Хип-Хоп / Рэп</option>
-                  <option value="Расслабляющий Джаз" className="dark:bg-gray-900">🎷 Расслабляющий Джаз</option>
-                  <option value="Synthwave 80s" className="dark:bg-gray-900">🌆 Synthwave 80s</option>
-                  <option value="Кинематографичный Оркестр" className="dark:bg-gray-900">🎻 Кинематографичный</option>
+                  <option value="" className="dark:bg-gray-900">Готовые пресеты...</option>
+                  <option value="Романтичный Поп" className="dark:bg-gray-900">Романтичный Поп</option>
+                  <option value="Эпичный Рок" className="dark:bg-gray-900">Эпичный Рок</option>
+                  <option value="Хип-Хоп и Рэп" className="dark:bg-gray-900">Хип-Хоп / Рэп</option>
+                  <option value="Расслабляющий Джаз" className="dark:bg-gray-900">Расслабляющий Джаз</option>
+                  <option value="Synthwave 80s" className="dark:bg-gray-900">Synthwave 80s</option>
+                  <option value="Кинематографичный Оркестр" className="dark:bg-gray-900">Кинематографичный</option>
                 </select>
 
                 <input
@@ -384,7 +384,6 @@ export default function NeuroArtist() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-sm"
               >
                 <span>Скачать файл</span>
-                <span>📥</span>
               </a>
             </div>
           </div>
@@ -452,7 +451,6 @@ export default function NeuroArtist() {
                           className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           <span>Скачать результат</span>
-                          <span>📥</span>
                         </a>
                       </div>
                     </div>
@@ -463,3 +461,6 @@ export default function NeuroArtist() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
