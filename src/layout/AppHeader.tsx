@@ -41,8 +41,11 @@ const AppHeader: React.FC = () => {
             )}
           </button>
 
-          <Link to="/" className="lg:hidden flex items-center gap-2">
-              <span className="text-lg font-black tracking-wide text-blue-600 dark:text-white">
+          <Link to="/" className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-xs shadow-sm">
+                НО
+              </span>
+              <span className="text-xl font-black tracking-wide text-gray-900 dark:text-white">
                 Нейро-Онлайн
               </span>
           </Link>
