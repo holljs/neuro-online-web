@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
+
+type NotificationItem = {
+  id: number;
+  title: string;
+  desc: string;
+  time: string;
+  isNew: boolean;
+};
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifs, setNotifs] = useState([
+  const [notifs, setNotifs] = useState<NotificationItem[]>([
     {
       id: 1,
       title: "🚀 Видеомодель ByteDance!",
-      desc: "Создавайте кинематографичные ролики до 10 секунд со звуком.",
+      desc: "Создавайте кинематографичные ролики со звуком.",
       time: "Сегодня",
       isNew: true,
     },
@@ -18,33 +26,44 @@ export default function NotificationDropdown() {
       time: "Вчера",
       isNew: false,
     },
-    {
-      id: 3,
-      title: "🎁 Бонус при входе",
-      desc: "Ваш баланс успешно подтянулся через VK ID.",
-      time: "2 дня назад",
-      isNew: false,
-    },
   ]);
 
-  const toggleDropdown = () => setIsOpen(!isOpen);
-  const closeDropdown = () => setIsOpen(false);
+  // Загружаем сохранённый статус «прочитано»
+  const [hasUnread, setHasUnread] = useState<boolean>(() => {
+    const lastReadId = localStorage.getItem("last_read_notif_id");
+    return lastReadId !== "1"; // Если id=1 уже прочитан, точек нет
+  });
 
-  const hasUnread = notifs.some((n) => iIsNew(n));
-  function iIsNew(n: any) { return n.isNew; }
+  const toggleDropdown = () => {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+
+    // При открытии гасим красную точку и запоминаем это
+    if (nextState && hasUnread) {
+      setHasUnread(false);
+      localStorage.setItem("last_read_notif_id", "1");
+      setNotifs((prev) =>
+        prev.map((item) => ({ ...item, isNew: false }))
+      );
+    }
+  };
+
+  const closeDropdown = () => setIsOpen(false);
 
   return (
     <div className="relative">
       <button
         onClick={toggleDropdown}
         className="relative flex items-center justify-center w-10 h-10 text-gray-500 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition"
+        aria-label="Уведомления"
       >
         <svg className="w-5 h-5 fill-current" viewBox="0 0 20 20">
           <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
         </svg>
 
+        {/* Красный кружочек только если есть непрочитанные */}
         {hasUnread && (
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900 animate-pulse" />
         )}
       </button>
 
