@@ -17,10 +17,13 @@ export default function UserProfiles() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Состояние поиска по промптам
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Вкладка истории: "photo" | "video" | "audio"
   const [activeTab, setActiveTab] = useState<"photo" | "video" | "audio">("photo");
 
-  // История генераций из localStorage
+  // История генераций
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
@@ -29,7 +32,6 @@ export default function UserProfiles() {
       fetchUserData(parseInt(savedUserId));
     }
 
-    // Загрузка истории генераций
     try {
       const savedHistory = localStorage.getItem("neuro_artist_history");
       if (savedHistory) {
@@ -82,22 +84,28 @@ export default function UserProfiles() {
     localStorage.setItem("neuro_artist_history", JSON.stringify(updated));
   };
 
-  // Вспомогательные проверки типа медиа
   const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
   const isAudioUrl = (url: string) => url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
 
-  // Фильтрация истории по выбранной вкладке
+  // Умная фильтрация по категориям и тексту поиска
   const filteredHistory = history.filter((item) => {
     if (!item.resultUrl) return false;
+
+    // Поиск по тексту промпта или названию режима
+    const matchesSearch =
+      item.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.modeName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
     if (activeTab === "video") return isVideoUrl(item.resultUrl);
     if (activeTab === "audio") return isAudioUrl(item.resultUrl);
-    // Для фото — всё, что не видео и не аудио
     return !isVideoUrl(item.resultUrl) && !isAudioUrl(item.resultUrl);
   });
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-8">
-      {/* КАРТОЧКА ПРОФИЛЯИ БАЛАНСА */}
+      {/* КАРТОЧКА ПРОФИЛЯ */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           Личный кабинет
@@ -136,24 +144,19 @@ export default function UserProfiles() {
               </a>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="text-xs text-red-500 hover:underline pt-2"
-            >
+            <button onClick={handleLogout} className="text-xs text-red-500 hover:underline pt-2">
               Выйти из аккаунта
             </button>
           </div>
         ) : (
           <form onSubmit={handleLogin} className="space-y-4 py-2 max-w-md mx-auto">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Введите ваш VK ID для входа:
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Введите ваш VK ID для входа:</p>
             <input
               type="text"
               placeholder="Например: 233876992"
               value={inputUserId}
               onChange={(e) => setInputUserId(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none text-center text-lg font-mono"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-center text-lg font-mono focus:outline-none"
             />
             {error && <p className="text-xs text-red-500">{error}</p>}
             <button
@@ -167,59 +170,70 @@ export default function UserProfiles() {
         )}
       </div>
 
-      {/* МОЙ АРХИВ ГЕНЕРАЦИЙ */}
+      {/* МОЙ АРХИВ С ПОИСКОМ */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">
               📂 Мой Архив Генераций
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">Ваши сохраненные медиафайлы</p>
+            <p className="text-xs text-gray-400 mt-0.5">Все созданные вами медиафайлы</p>
           </div>
 
-          {/* Переключатель вкладок */}
-          <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-full sm:w-auto">
-            <button
-              onClick={() => setActiveTab("photo")}
-              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition ${
-                activeTab === "photo"
-                  ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-              }`}
-            >
-              🖼 Картинки ({history.filter((i) => i.resultUrl && !isVideoUrl(i.resultUrl) && !isAudioUrl(i.resultUrl)).length})
-            </button>
-            <button
-              onClick={() => setActiveTab("video")}
-              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition ${
-                activeTab === "video"
-                  ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-              }`}
-            >
-              🎬 Видео ({history.filter((i) => i.resultUrl && isVideoUrl(i.resultUrl)).length})
-            </button>
-            <button
-              onClick={() => setActiveTab("audio")}
-              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition ${
-                activeTab === "audio"
-                  ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-              }`}
-            >
-              🎵 Музыка ({history.filter((i) => i.resultUrl && isAudioUrl(i.resultUrl)).length})
-            </button>
+          {/* ПОЛЕ ПОИСКА ПО ПРОМПТАМ */}
+          <div className="w-full md:w-auto">
+            <input
+              type="text"
+              placeholder="🔍 Поиск по промптам..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full md:w-64 px-3.5 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
           </div>
         </div>
 
-        {/* Контент архива */}
+        {/* ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК */}
+        <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl mb-6">
+          <button
+            onClick={() => setActiveTab("photo")}
+            className={`flex-1 px-4 py-2 text-xs font-bold rounded-lg transition ${
+              activeTab === "photo"
+                ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            🖼 Картинки ({history.filter((i) => i.resultUrl && !isVideoUrl(i.resultUrl) && !isAudioUrl(i.resultUrl)).length})
+          </button>
+          <button
+            onClick={() => setActiveTab("video")}
+            className={`flex-1 px-4 py-2 text-xs font-bold rounded-lg transition ${
+              activeTab === "video"
+                ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            🎬 Видео ({history.filter((i) => i.resultUrl && isVideoUrl(i.resultUrl)).length})
+          </button>
+          <button
+            onClick={() => setActiveTab("audio")}
+            className={`flex-1 px-4 py-2 text-xs font-bold rounded-lg transition ${
+              activeTab === "audio"
+                ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            🎵 Музыка ({history.filter((i) => i.resultUrl && isAudioUrl(i.resultUrl)).length})
+          </button>
+        </div>
+
+        {/* КОНТЕНТ АРХИВА */}
         {filteredHistory.length === 0 ? (
           <div className="py-12 text-center text-gray-400 text-sm">
             <p className="text-base font-semibold text-gray-600 dark:text-gray-300 mb-1">
-              В этой категории пока ничего нет
+              Ничего не найдено
             </p>
             <p className="text-xs">
-              Сгенерируйте {activeTab === "photo" ? "картинку" : activeTab === "video" ? "видеоклип" : "трек"}, и результат появится здесь.
+              {searchQuery ? "Попробуйте изменить поисковый запрос." : "В этой категории пока нет генераций."}
             </p>
           </div>
         ) : (
@@ -231,9 +245,7 @@ export default function UserProfiles() {
               >
                 <div>
                   <div className="flex justify-between items-center text-xs mb-2">
-                    <span className="font-bold text-blue-600 dark:text-blue-400">
-                      {item.modeName}
-                    </span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400">{item.modeName}</span>
                     <span className="text-gray-400 text-[10px]">{item.date}</span>
                   </div>
 
@@ -275,7 +287,6 @@ export default function UserProfiles() {
                   <button
                     onClick={() => handleDeleteItem(item.id)}
                     className="text-gray-400 hover:text-red-500 font-medium transition"
-                    title="Удалить файл"
                   >
                     Удалить ✕
                   </button>
