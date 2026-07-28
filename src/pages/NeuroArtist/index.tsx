@@ -391,7 +391,7 @@ export default function NeuroArtist() {
         )}
       </div>
 
-      {/* Правая колонка — Последняя генерация и Ссылка в Архив */}
+      {/* Правая колонка — Последний результат */}
       <div className="space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="flex justify-between items-center mb-4">
@@ -399,7 +399,7 @@ export default function NeuroArtist() {
               Последний результат
             </h3>
             <a
-              href="/profile"
+              href="/history"
               className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition"
             >
               <span>Вся история</span>
@@ -429,7 +429,7 @@ export default function NeuroArtist() {
                   </p>
 
                   {item.resultUrl && (
-                    <div className="pt-2 space-y-2">
+                    <div className="pt-2 space-y-3">
                       {isVideoUrl(item.resultUrl) ? (
                         <video src={item.resultUrl} controls className="w-full h-56 object-cover rounded-xl shadow-sm" />
                       ) : isAudioUrl(item.resultUrl) ? (
@@ -443,23 +443,16 @@ export default function NeuroArtist() {
                         />
                       )}
                       
-                      <div className="flex justify-between items-center pt-1">
+                      <div className="pt-1">
                         <a
                           href={item.resultUrl}
                           target="_blank"
                           rel="noreferrer"
                           download
-                          className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          <span>Скачать файл</span>
+                          <span>Скачать результат</span>
                           <span>📥</span>
-                        </a>
-
-                        <a
-                          href="/profile"
-                          className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
-                        >
-                          Открыть в архиве 📂
                         </a>
                       </div>
                     </div>
@@ -470,6 +463,3 @@ export default function NeuroArtist() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
