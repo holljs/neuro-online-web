@@ -133,7 +133,7 @@ export default function UserDropdown() {
           {/* 3. Поддержка */}
           <li>
             <a
-              href="https://vk.com/im?media=&sel=-233876992"
+              href="https://vk.me/club191367447"
               target="_blank"
               rel="noreferrer"
               onClick={closeDropdown}
