@@ -17,21 +17,78 @@ export default function HistoryPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
+  // 🚀 Состояния для серверной пагинации
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const LIMIT = 15;
+
+  // Функция получения user_id
+  const getUserId = (): string => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
+    if (idFromUrl) return idFromUrl;
+    
+    // Резервные варианты
+    return localStorage.getItem("vk_user_id") || localStorage.getItem("user_id") || "233876992";
+  };
+
+  // 📡 Загрузка истории с сервера бэкенда
+  const fetchServerHistory = async (isInitial = false) => {
+    const userId = getUserId();
+    if (!userId || loading) return;
+
+    setLoading(true);
+    const currentOffset = isInitial ? 0 : offset;
+
     try {
-      const savedHistory = localStorage.getItem("neuro_artist_history");
-      if (savedHistory) {
-        setHistory(JSON.parse(savedHistory));
+      const res = await fetch(
+        `https://neuro-master.online/api/history/${userId}?limit=${LIMIT}&offset=${currentOffset}&_t=${Date.now()}`
+      );
+      const data = await res.json();
+
+      if (data.success && data.items) {
+        // Преобразуем формат с бэкенда под интерфейс
+        const formattedItems: HistoryItem[] = data.items.map((item: any) => ({
+          id: String(item.id),
+          modeName: item.model || "Генерация",
+          prompt: item.prompt || "Без текста",
+          date: item.created_at ? new Date(item.created_at).toLocaleDateString("ru-RU") : "Недавно",
+          resultUrl: item.result_url
+        }));
+
+        if (isInitial) {
+          setHistory(formattedItems);
+          setOffset(LIMIT);
+        } else {
+          setHistory((prev) => [...prev, ...formattedItems]);
+          setOffset((prev) => prev + LIMIT);
+        }
+
+        setHasMore(data.has_more);
       }
     } catch (e) {
-      console.error("Ошибка чтения истории:", e);
+      console.error("Ошибка загрузки истории с сервера:", e);
+      // Если сервер не ответил, берем запас из localStorage
+      if (isInitial) {
+        try {
+          const saved = localStorage.getItem("neuro_artist_history");
+          if (saved) setHistory(JSON.parse(saved));
+        } catch (err) {}
+      }
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchServerHistory(true);
   }, []);
 
   const handleDeleteItem = (id: string) => {
     const updated = history.filter((item) => item.id !== id);
     setHistory(updated);
-    localStorage.setItem("neuro_artist_history", JSON.stringify(updated));
   };
 
   const handleCopyPrompt = (text: string, id: string) => {
@@ -191,113 +248,128 @@ export default function HistoryPage() {
         {filteredHistory.length === 0 ? (
           <div className="py-16 text-center text-gray-400 text-xs">
             <p className="font-medium text-gray-600 dark:text-gray-300 text-sm mb-1">
-              Ничего не найдено
+              {loading ? "Загружаем историю..." : "Ничего не найдено"}
             </p>
             <p>
               {searchQuery ? "Попробуйте изменить поисковый запрос." : "В этой категории пока нет генераций."}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredHistory.map((item) => {
-              const mediaUrl = getMediaUrl(item);
-              const posterUrl = getPosterUrl(item);
-              const isVideo = isVideoUrl(mediaUrl);
-              const isAudio = isAudioUrl(mediaUrl);
-              const isExpanded = !!expandedIds[item.id];
-              const isLongPrompt = item.prompt.length > 80;
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredHistory.map((item) => {
+                const mediaUrl = getMediaUrl(item);
+                const posterUrl = getPosterUrl(item);
+                const isVideo = isVideoUrl(mediaUrl);
+                const isAudio = isAudioUrl(mediaUrl);
+                const isExpanded = !!expandedIds[item.id];
+                const isLongPrompt = item.prompt.length > 80;
 
-              return (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-3.5 flex flex-col justify-between space-y-3"
-                >
-                  <div className="space-y-2.5">
-                    {/* Заголовок карточки */}
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-gray-900 dark:text-white">
-                        {item.modeName}
-                      </span>
-                      <span className="text-gray-400 text-[10px] font-mono">{item.date}</span>
-                    </div>
-
-                    {/* Отображение Медиа */}
-                    {mediaUrl && (
-                      <div className="relative w-full h-48 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                        {isVideo ? (
-                          <video
-                            src={mediaUrl}
-                            poster={posterUrl}
-                            controls
-                            className="w-full h-full object-cover"
-                          />
-                        ) : isAudio ? (
-                          <div className="w-full p-3 bg-white dark:bg-gray-900">
-                            <audio src={mediaUrl} controls className="w-full" />
-                          </div>
-                        ) : (
-                          <img
-                            src={mediaUrl}
-                            alt="Результат"
-                            className="w-full h-full object-cover rounded-lg"
-                            onError={(e) => {
-                              const target = e.target as HTMLElement;
-                              target.style.display = "none";
-                              if (target.parentElement) {
-                                target.parentElement.innerHTML = '<div class="text-[11px] text-gray-400 text-center p-4">⏳ Срок временного хранения файла истёк</div>';
-                              }
-                            }}
-                          />
-                        )}
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-3.5 flex flex-col justify-between space-y-3"
+                  >
+                    <div className="space-y-2.5">
+                      {/* Заголовок карточки */}
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-gray-900 dark:text-white">
+                          {item.modeName}
+                        </span>
+                        <span className="text-gray-400 text-[10px] font-mono">{item.date}</span>
                       </div>
-                    )}
 
-                    {/* Сворачиваемый блок с Промптом */}
-                    <div className="bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-200/70 dark:border-gray-800 space-y-1">
-                      <p className={`text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic ${!isExpanded ? "line-clamp-2" : ""}`}>
-                        "{item.prompt}"
-                      </p>
+                      {/* Отображение Медиа */}
+                      {mediaUrl && (
+                        <div className="relative w-full h-48 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                          {isVideo ? (
+                            <video
+                              src={mediaUrl}
+                              poster={posterUrl}
+                              controls
+                              className="w-full h-full object-cover"
+                            />
+                          ) : isAudio ? (
+                            <div className="w-full p-3 bg-white dark:bg-gray-900">
+                              <audio src={mediaUrl} controls className="w-full" />
+                            </div>
+                          ) : (
+                            <img
+                              src={mediaUrl}
+                              alt="Результат"
+                              className="w-full h-full object-cover rounded-lg"
+                              onError={(e) => {
+                                const target = e.target as HTMLElement;
+                                target.style.display = "none";
+                                if (target.parentElement) {
+                                  target.parentElement.innerHTML = '<div class="text-[11px] text-gray-400 text-center p-4">⏳ Срок временного хранения файла истёк</div>';
+                                }
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
 
-                      <div className="flex items-center justify-between pt-1 text-[11px]">
-                        {isLongPrompt && (
+                      {/* Сворачиваемый блок с Промптом */}
+                      <div className="bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-200/70 dark:border-gray-800 space-y-1">
+                        <p className={`text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic ${!isExpanded ? "line-clamp-2" : ""}`}>
+                          "{item.prompt}"
+                        </p>
+
+                        <div className="flex items-center justify-between pt-1 text-[11px]">
+                          {isLongPrompt && (
+                            <button
+                              onClick={() => toggleExpand(item.id)}
+                              className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold cursor-pointer"
+                            >
+                              {isExpanded ? "Свернуть ↑" : "Развернуть ↓"}
+                            </button>
+                          )}
+
                           <button
-                            onClick={() => toggleExpand(item.id)}
-                            className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold cursor-pointer"
+                            onClick={() => handleCopyPrompt(item.prompt, item.id)}
+                            className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                           >
-                            {isExpanded ? "Свернуть ↑" : "Развернуть ↓"}
+                            {copiedId === item.id ? "✓ Скопировано" : "📋 Скопировать"}
                           </button>
-                        )}
-
-                        <button
-                          onClick={() => handleCopyPrompt(item.prompt, item.id)}
-                          className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                        >
-                          {copiedId === item.id ? "✓ Скопировано" : "📋 Скопировать"}
-                        </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Скачивание и удаление */}
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
-                    <button
-                      onClick={() => handleDownload(mediaUrl, `neuro_master_${item.id}`, isVideo, isAudio)}
-                      className="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                    >
-                      Скачать {isVideo ? "видео" : isAudio ? "аудио" : "файл"}
-                    </button>
+                    {/* Скачивание и удаление */}
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
+                      <button
+                        onClick={() => handleDownload(mediaUrl, `neuro_master_${item.id}`, isVideo, isAudio)}
+                        className="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                      >
+                        Скачать {isVideo ? "видео" : isAudio ? "аудио" : "файл"}
+                      </button>
 
-                    <button
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="text-gray-400 hover:text-red-500 font-medium transition cursor-pointer"
-                    >
-                      Удалить
-                    </button>
+                      <button
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="text-gray-400 hover:text-red-500 font-medium transition cursor-pointer"
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {/* 🔥 КНОПКА «ПОКАЗАТЬ ЕЩЁ» (ПАГИНАЦИЯ) 🔥 */}
+            {hasMore && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => fetchServerHistory(false)}
+                  disabled={loading}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-sm transition disabled:opacity-50 cursor-pointer"
+                >
+                  {loading ? "Загрузка..." : "Показать ещё 15 штук"}
+                </button>
+              </div>
+            )}
+          </>
         )}
 
       </div>
