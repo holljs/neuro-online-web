@@ -1,6 +1,43 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+// 🎨 CSS Анимации для лоадера (вставляем прямо в компонент)
+const loaderStyles = `
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.01); }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 50%, #eff6ff 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+  }
+  
+  .dark .animate-shimmer {
+    background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+    background-size: 200% 100%;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 3s infinite ease-in-out;
+  }
+
+  .spin-mini {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
 const API_BASE = "/api";
 const BOT_TOKEN = "SuperSecret_987654321_Token";
 
@@ -28,7 +65,7 @@ export default function NeuroArtist() {
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  // Определение user_id с поддержкой VK и URL
+  // Определение user_id
   const getUserId = (): number => {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
@@ -47,7 +84,7 @@ export default function NeuroArtist() {
     }
   });
 
-  // 📡 1. Загружаем САМОЕ СВЕЖЕЕ фото с бэкенда при открытии страницы!
+  // 📡 Загрузка последнего фото с сервера
   const loadLatestServerHistory = async () => {
     try {
       const res = await axios.get(`${API_BASE}/history/${userId}?limit=1&_t=${Date.now()}`);
@@ -62,7 +99,6 @@ export default function NeuroArtist() {
           resultUrl: lastItem.result_url
         };
         setHistory((prev) => {
-          // Если совпадает с первым элементом — не дублируем
           if (prev.length > 0 && prev[0].id === serverHistoryItem.id) return prev;
           return [serverHistoryItem, ...prev];
         });
@@ -156,7 +192,6 @@ export default function NeuroArtist() {
         setCurrentResultUrl(finalUrl);
         setIsGenerating(false);
 
-        // 🧹 Очищаем поля ввода
         setPrompt("");
         setSelectedImages([]);
         setRawFiles([]);
@@ -169,11 +204,7 @@ export default function NeuroArtist() {
           images: base64Images.length > 0 ? base64Images : selectedImages,
           resultUrl: finalUrl,
         };
-
-        // Ставим новое свежее фото на первое место в истории!
         setHistory((prev) => [newItem, ...prev]);
-
-        // 🔥 Перезапрашиваем заново актуальное фото с бэкенда для зацепки
         setTimeout(loadLatestServerHistory, 1000);
 
       } else if (res.data.success === false) {
@@ -192,7 +223,7 @@ export default function NeuroArtist() {
     if (!prompt.trim() && activeMode !== "gfpgan" && selectedImages.length === 0) return;
 
     setIsGenerating(true);
-    setCurrentResultUrl(null);
+    setCurrentResultUrl(null); // Сбрасываем старый результат
 
     const currentModeObj = currentModes.find((m) => m.id === activeMode);
     const modeName = currentModeObj?.name || "Генерация";
@@ -232,7 +263,10 @@ export default function NeuroArtist() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
-      {/* Полноэкранное модальное окно просмотра */}
+      {/* Подключаем стили лоадера */}
+      <style>{loaderStyles}</style>
+
+      {/* Полноэкранное модальное окно просмотр */}
       {modalMedia && (
         <div
           className="fixed inset-0 z-[999999] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md cursor-pointer"
@@ -400,48 +434,87 @@ export default function NeuroArtist() {
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 shadow-md cursor-pointer"
+            className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 shadow-md cursor-pointer flex items-center justify-center gap-2.5"
           >
-            {isGenerating ? "Нейросеть генерирует..." : "Запустить генерацию"}
+            {isGenerating ? (
+              <>
+                <svg className="spin-mini h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Магия в процессе...</span>
+              </>
+            ) : (
+              "Запустить генерацию"
+            )}
           </button>
         </div>
 
-        {/* Результат текущей генерации */}
-        {currentResultUrl && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 text-center shadow-sm">
-            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
-              Результат готов
-            </h3>
+        {/* 🌀 БЛОК ЗАГРУЗКИ / РЕЗУЛЬТАТА 🌀 */}
+        {(isGenerating || currentResultUrl) && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 text-center shadow-sm relative overflow-hidden">
             
-            {isVideoUrl(currentResultUrl) ? (
-              <video src={currentResultUrl} controls autoPlay loop className="mx-auto rounded-xl max-h-[500px] w-full object-contain" />
-            ) : isAudioUrl(currentResultUrl) ? (
-              <audio src={currentResultUrl} controls className="w-full mx-auto mt-2" />
-            ) : (
-              <img
-                src={currentResultUrl}
-                alt="Результат"
-                onClick={() => setModalMedia(currentResultUrl)}
-                className="mx-auto rounded-xl max-h-[500px] object-contain cursor-pointer hover:opacity-95 transition"
-              />
+            {/* 1. КРАСИВЫЙ РЕЛОУДЕР (показываем пока идет генерация) */}
+            {isGenerating && (
+              <div className="absolute inset-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-pulse-slow">
+                <div className="w-full h-64 rounded-2xl animate-shimmer mb-6 border border-gray-100 dark:border-gray-800 flex items-center justify-center">
+                   <svg className="w-16 h-16 text-blue-200 dark:text-blue-900spin-mini" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-2">
+                  Нейросеть творит магию
+                </h3>
+                <p className="text-sm text-gray-500 max-w-sm">
+                  Это может занять от нескольких секунд до 3-х минут для видео и сложных миксов. Пожалуйста, не закрывайте страницу.
+                </p>
+              </div>
             )}
 
-            <div className="mt-4">
-              <a
-                href={currentResultUrl}
-                target="_blank"
-                rel="noreferrer"
-                download
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-sm"
-              >
-                <span>Скачать файл</span>
-              </a>
-            </div>
+            {/* 2. ГОТОВЫЙ РЕЗУЛЬТАТ */}
+            {currentResultUrl && (
+              <>
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 relative z-0">
+                  Результат готов
+                </h3>
+                
+                <div className="relative z-0">
+                {isVideoUrl(currentResultUrl) ? (
+                  <video src={currentResultUrl} controls autoPlay loop className="mx-auto rounded-xl max-h-[500px] w-full object-contain shadow-lg" />
+                ) : isAudioUrl(currentResultUrl) ? (
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <audio src={currentResultUrl} controls className="w-full mx-auto" />
+                  </div>
+                ) : (
+                  <img
+                    src={currentResultUrl}
+                    alt="Результат"
+                    onClick={() => setModalMedia(currentResultUrl)}
+                    className="mx-auto rounded-xl max-h-[500px] object-contain cursor-pointer hover:opacity-95 transition shadow-lg border border-gray-100 dark:border-gray-800"
+                  />
+                )}
+                </div>
+
+                <div className="mt-5 relative z-0">
+                  <a
+                    href={currentResultUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="getMediaUrl"></path></svg>
+                    <span>Скачать файл</span>
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
 
-      {/* Правая колонка — Последний результат со сворачиванием промпта */}
+      {/* Правая колонка — Последний результат */}
       <div className="space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="flex justify-between items-center mb-4">
@@ -475,7 +548,6 @@ export default function NeuroArtist() {
                     <span className="text-gray-400 text-[10px]">{item.date}</span>
                   </div>
 
-                  {/* Блок промпта с кнопкой копирования и свертыванием */}
                   <div className="space-y-1.5 bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200/80 dark:border-gray-800">
                     <p className={`text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium ${!isPromptExpanded ? "line-clamp-3" : ""}`}>
                       "{item.prompt}"
@@ -524,6 +596,7 @@ export default function NeuroArtist() {
                           download
                           className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                         >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="getMediaUrl"></path></svg>
                           <span>Скачать результат</span>
                         </a>
                       </div>
