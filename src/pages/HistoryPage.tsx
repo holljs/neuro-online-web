@@ -44,7 +44,9 @@ export default function HistoryPage() {
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Вспомогательная функция для получения корректного URL медиафайла
+  const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
+  const isAudioUrl = (url: string) => url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
+
   const getMediaUrl = (item: HistoryItem): string => {
     const rawUrl = item.resultUrl || item.url || (item.images && item.images[0]) || "";
     if (!rawUrl) return "";
@@ -52,28 +54,43 @@ export default function HistoryPage() {
     return `https://neuro-master.online${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}`;
   };
 
-  // Надежная функция скачивания файлов через Blob
-  const handleDownload = async (url: string, filename: string) => {
+  const getPosterUrl = (item: HistoryItem): string | undefined => {
+    if (item.images && item.images.length > 0 && item.images[0]) {
+      return item.images[0];
+    }
+    return undefined;
+  };
+
+  const handleDownload = async (url: string, filename: string, isVideo: boolean, isAudio: boolean) => {
     if (!url) return;
     try {
-      const response = await fetch(url);
+      let ext = ".png";
+      if (isVideo) ext = ".mp4";
+      if (isAudio) ext = ".mp3";
+
+      const finalName = filename.replace(/\.[^/.]+$/, "") + ext;
+
+      const response = await fetch(url, { mode: "cors" });
+      if (!response.ok) throw new Error("Network response failed");
       const blob = await response.blob();
+
+      if (blob.size < 100) {
+        window.open(url, "_blank");
+        return;
+      }
+
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = filename || "generation.png";
+      link.download = finalName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      // Если браузер заблокировал CORS, открываем файл в новой вкладке
       window.open(url, "_blank");
     }
   };
-
-  const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
-  const isAudioUrl = (url: string) => url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
 
   const filteredHistory = history.filter((item) => {
     const url = getMediaUrl(item);
@@ -113,6 +130,15 @@ export default function HistoryPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
             />
+          </div>
+        </div>
+
+        {/* Памятка о сроках хранения */}
+        <div className="my-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-200">
+          <span className="text-lg">💡</span>
+          <div>
+            <span className="font-bold block mb-0.5">Правила хранения материалов:</span>
+            <span>Изображения хранятся в галерее <b>30 дней</b>, а Видео и Музыка — <b>7 дней</b>. Пожалуйста, сохраняйте важные файлы на своё устройство заранее!</span>
           </div>
         </div>
 
@@ -175,6 +201,9 @@ export default function HistoryPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredHistory.map((item) => {
               const mediaUrl = getMediaUrl(item);
+              const posterUrl = getPosterUrl(item);
+              const isVideo = isVideoUrl(mediaUrl);
+              const isAudio = isAudioUrl(mediaUrl);
               const isExpanded = !!expandedIds[item.id];
               const isLongPrompt = item.prompt.length > 80;
 
@@ -195,9 +224,14 @@ export default function HistoryPage() {
                     {/* Отображение Медиа */}
                     {mediaUrl && (
                       <div className="relative w-full h-48 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                        {isVideoUrl(mediaUrl) ? (
-                          <video src={mediaUrl} controls className="w-full h-full object-cover" />
-                        ) : isAudioUrl(mediaUrl) ? (
+                        {isVideo ? (
+                          <video
+                            src={mediaUrl}
+                            poster={posterUrl}
+                            controls
+                            className="w-full h-full object-cover"
+                          />
+                        ) : isAudio ? (
                           <div className="w-full p-3 bg-white dark:bg-gray-900">
                             <audio src={mediaUrl} controls className="w-full" />
                           </div>
@@ -207,7 +241,11 @@ export default function HistoryPage() {
                             alt="Результат"
                             className="w-full h-full object-cover rounded-lg"
                             onError={(e) => {
-                              (e.target as HTMLElement).style.display = "none";
+                              const target = e.target as HTMLElement;
+                              target.style.display = "none";
+                              if (target.parentElement) {
+                                target.parentElement.innerHTML = '<div class="text-[11px] text-gray-400 text-center p-4">⏳ Срок временного хранения файла истёк</div>';
+                              }
                             }}
                           />
                         )}
@@ -243,10 +281,10 @@ export default function HistoryPage() {
                   {/* Скачивание и удаление */}
                   <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
                     <button
-                      onClick={() => handleDownload(mediaUrl, `neuro_master_${item.id}.png`)}
+                      onClick={() => handleDownload(mediaUrl, `neuro_master_${item.id}`, isVideo, isAudio)}
                       className="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                     >
-                      Скачать файл
+                      Скачать {isVideo ? "видео" : isAudio ? "аудио" : "файл"}
                     </button>
 
                     <button
