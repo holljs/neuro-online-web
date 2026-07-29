@@ -107,14 +107,17 @@ export default function NeuroBro() {
     try {
       await axios.post(
         `${API_BASE}/chat/clear`,
-        { user_id: userId },
+        { 
+          user_id: userId,
+          prompt: "clear" // 👈 ДОБАВИЛИ ЗАГЛУШКУ! Теперь бэкенд точно примет запрос
+        },
         { headers: { "X-Bot-Token": BOT_TOKEN } }
       );
       setMessages([]);
       setShowConfirmModal(false);
     } catch (e) {
       console.error("Ошибка очистки чата:", e);
-      // В случае ошибки на бэке всё равно сбрасываем локально для удобства
+      // В случае ошибки сбрасываем локально
       setMessages([]);
       setShowConfirmModal(false);
     } finally {
