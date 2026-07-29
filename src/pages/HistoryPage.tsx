@@ -5,8 +5,9 @@ type HistoryItem = {
   modeName: string;
   prompt: string;
   date: string;
-  images: string[];
+  images?: string[];
   resultUrl?: string;
+  url?: string;
 };
 
 export default function HistoryPage() {
@@ -43,11 +44,40 @@ export default function HistoryPage() {
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Вспомогательная функция для получения корректного URL медиафайла
+  const getMediaUrl = (item: HistoryItem): string => {
+    const rawUrl = item.resultUrl || item.url || (item.images && item.images[0]) || "";
+    if (!rawUrl) return "";
+    if (rawUrl.startsWith("http") || rawUrl.startsWith("data:")) return rawUrl;
+    return `https://neuro-master.online${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}`;
+  };
+
+  // Надежная функция скачивания файлов через Blob
+  const handleDownload = async (url: string, filename: string) => {
+    if (!url) return;
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename || "generation.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      // Если браузер заблокировал CORS, открываем файл в новой вкладке
+      window.open(url, "_blank");
+    }
+  };
+
   const isVideoUrl = (url: string) => url.includes(".mp4") || url.includes("video") || url.includes(".mov");
   const isAudioUrl = (url: string) => url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
 
   const filteredHistory = history.filter((item) => {
-    if (!item.resultUrl) return false;
+    const url = getMediaUrl(item);
+    if (!url) return false;
 
     const matchesSearch =
       item.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,9 +85,9 @@ export default function HistoryPage() {
 
     if (!matchesSearch) return false;
 
-    if (activeTab === "video") return isVideoUrl(item.resultUrl);
-    if (activeTab === "audio") return isAudioUrl(item.resultUrl);
-    return !isVideoUrl(item.resultUrl) && !isAudioUrl(item.resultUrl);
+    if (activeTab === "video") return isVideoUrl(url);
+    if (activeTab === "audio") return isAudioUrl(url);
+    return !isVideoUrl(url) && !isAudioUrl(url);
   });
 
   return (
@@ -90,37 +120,48 @@ export default function HistoryPage() {
         <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl my-6">
           <button
             onClick={() => setActiveTab("photo")}
-            className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-lg transition ${
+            className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
               activeTab === "photo"
                 ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
                 : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            Изображения ({history.filter((i) => i.resultUrl && !isVideoUrl(i.resultUrl) && !isAudioUrl(i.resultUrl)).length})
+            Изображения ({history.filter((i) => {
+              const u = getMediaUrl(i);
+              return u && !isVideoUrl(u) && !isAudioUrl(u);
+            }).length})
           </button>
+
           <button
             onClick={() => setActiveTab("video")}
-            className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-lg transition ${
+            className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
               activeTab === "video"
                 ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
                 : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            Видео ({history.filter((i) => i.resultUrl && isVideoUrl(i.resultUrl)).length})
+            Видео ({history.filter((i) => {
+              const u = getMediaUrl(i);
+              return u && isVideoUrl(u);
+            }).length})
           </button>
+
           <button
             onClick={() => setActiveTab("audio")}
-            className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-lg transition ${
+            className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
               activeTab === "audio"
                 ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
                 : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            Музыка ({history.filter((i) => i.resultUrl && isAudioUrl(i.resultUrl)).length})
+            Музыка ({history.filter((i) => {
+              const u = getMediaUrl(i);
+              return u && isAudioUrl(u);
+            }).length})
           </button>
         </div>
 
-        {/* Сетка результативных карточек (Фотогалерея) */}
+        {/* Сетка результативных карточек */}
         {filteredHistory.length === 0 ? (
           <div className="py-16 text-center text-gray-400 text-xs">
             <p className="font-medium text-gray-600 dark:text-gray-300 text-sm mb-1">
@@ -133,6 +174,7 @@ export default function HistoryPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredHistory.map((item) => {
+              const mediaUrl = getMediaUrl(item);
               const isExpanded = !!expandedIds[item.id];
               const isLongPrompt = item.prompt.length > 80;
 
@@ -142,7 +184,7 @@ export default function HistoryPage() {
                   className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-3.5 flex flex-col justify-between space-y-3"
                 >
                   <div className="space-y-2.5">
-                    {/* Заголовок карточки с датой */}
+                    {/* Заголовок карточки */}
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-bold text-gray-900 dark:text-white">
                         {item.modeName}
@@ -150,20 +192,23 @@ export default function HistoryPage() {
                       <span className="text-gray-400 text-[10px] font-mono">{item.date}</span>
                     </div>
 
-                    {/* Показ Медиа */}
-                    {item.resultUrl && (
-                      <div>
-                        {isVideoUrl(item.resultUrl) ? (
-                          <video src={item.resultUrl} controls className="w-full h-48 object-cover rounded-lg" />
-                        ) : isAudioUrl(item.resultUrl) ? (
-                          <div className="py-4 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
-                            <audio src={item.resultUrl} controls className="w-full" />
+                    {/* Отображение Медиа */}
+                    {mediaUrl && (
+                      <div className="relative w-full h-48 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                        {isVideoUrl(mediaUrl) ? (
+                          <video src={mediaUrl} controls className="w-full h-full object-cover" />
+                        ) : isAudioUrl(mediaUrl) ? (
+                          <div className="w-full p-3 bg-white dark:bg-gray-900">
+                            <audio src={mediaUrl} controls className="w-full" />
                           </div>
                         ) : (
                           <img
-                            src={item.resultUrl}
+                            src={mediaUrl}
                             alt="Результат"
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                            className="w-full h-full object-cover rounded-lg"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                            }}
                           />
                         )}
                       </div>
@@ -179,7 +224,7 @@ export default function HistoryPage() {
                         {isLongPrompt && (
                           <button
                             onClick={() => toggleExpand(item.id)}
-                            className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold"
+                            className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold cursor-pointer"
                           >
                             {isExpanded ? "Свернуть ↑" : "Развернуть ↓"}
                           </button>
@@ -187,7 +232,7 @@ export default function HistoryPage() {
 
                         <button
                           onClick={() => handleCopyPrompt(item.prompt, item.id)}
-                          className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                          className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                         >
                           {copiedId === item.id ? "✓ Скопировано" : "📋 Скопировать"}
                         </button>
@@ -195,21 +240,18 @@ export default function HistoryPage() {
                     </div>
                   </div>
 
-                  {/* Нижняя панель скачивания / удаления */}
+                  {/* Скачивание и удаление */}
                   <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
-                    <a
-                      href={item.resultUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      download
-                      className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                    <button
+                      onClick={() => handleDownload(mediaUrl, `neuro_master_${item.id}.png`)}
+                      className="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                     >
                       Скачать файл
-                    </a>
+                    </button>
 
                     <button
                       onClick={() => handleDeleteItem(item.id)}
-                      className="text-gray-400 hover:text-red-500 font-medium transition"
+                      className="text-gray-400 hover:text-red-500 font-medium transition cursor-pointer"
                     >
                       Удалить
                     </button>
