@@ -790,3 +790,12 @@ span.flatpickr-weekday,
 .simplebar-scrollbar.simplebar-visible:before {
   @apply opacity-100;
 }
+
+/* Масштабирование шрифта для всего сайта */
+html.font-size-large {
+  font-size: 118%; /* Крупный (A+) */
+}
+
+html.font-size-huge {
+  font-size: 135%; /* Огромный (A++) */
+}
