@@ -21,6 +21,7 @@ import Home from "./pages/Dashboard/Home";
 import NeuroBro from "./pages/NeuroBro";
 import NeuroArtist from "./pages/NeuroArtist";
 import HistoryPage from "./pages/HistoryPage";
+import SettingsPage from "./pages/SettingsPage";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 
