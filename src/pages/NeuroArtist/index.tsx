@@ -28,17 +28,53 @@ export default function NeuroArtist() {
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  const userId = parseInt(localStorage.getItem("user_id") || "233876992");
+  // Определение user_id с поддержкой VK и URL
+  const getUserId = (): number => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
+    if (idFromUrl) return parseInt(idFromUrl);
+    return parseInt(localStorage.getItem("user_id") || "233876992");
+  };
+
+  const userId = getUserId();
 
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     try {
       const saved = localStorage.getItem("neuro_artist_history");
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Ошибка чтения истории:", e);
       return [];
     }
   });
+
+  // 📡 1. Загружаем САМОЕ СВЕЖЕЕ фото с бэкенда при открытии страницы!
+  const loadLatestServerHistory = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/history/${userId}?limit=1&_t=${Date.now()}`);
+      if (res.data.success && res.data.items && res.data.items.length > 0) {
+        const lastItem = res.data.items[0];
+        const serverHistoryItem: HistoryItem = {
+          id: String(lastItem.id),
+          modeName: lastItem.model || "Генерация",
+          prompt: lastItem.prompt || "Без текста",
+          date: lastItem.created_at ? new Date(lastItem.created_at).toLocaleDateString("ru-RU") : "Недавно",
+          images: [],
+          resultUrl: lastItem.result_url
+        };
+        setHistory((prev) => {
+          // Если совпадает с первым элементом — не дублируем
+          if (prev.length > 0 && prev[0].id === serverHistoryItem.id) return prev;
+          return [serverHistoryItem, ...prev];
+        });
+      }
+    } catch (e) {
+      console.error("Ошибка синхронизации последней генерации:", e);
+    }
+  };
+
+  useEffect(() => {
+    loadLatestServerHistory();
+  }, [userId]);
 
   useEffect(() => {
     try {
@@ -120,7 +156,7 @@ export default function NeuroArtist() {
         setCurrentResultUrl(finalUrl);
         setIsGenerating(false);
 
-        // 🧹 Очищаем поля ввода после успешной генерации
+        // 🧹 Очищаем поля ввода
         setPrompt("");
         setSelectedImages([]);
         setRawFiles([]);
@@ -133,7 +169,13 @@ export default function NeuroArtist() {
           images: base64Images.length > 0 ? base64Images : selectedImages,
           resultUrl: finalUrl,
         };
+
+        // Ставим новое свежее фото на первое место в истории!
         setHistory((prev) => [newItem, ...prev]);
+
+        // 🔥 Перезапрашиваем заново актуальное фото с бэкенда для зацепки
+        setTimeout(loadLatestServerHistory, 1000);
+
       } else if (res.data.success === false) {
         alert("Ошибка генерации: " + (res.data.error || "Неизвестная ошибка"));
         setIsGenerating(false);
@@ -154,7 +196,7 @@ export default function NeuroArtist() {
 
     const currentModeObj = currentModes.find((m) => m.id === activeMode);
     const modeName = currentModeObj?.name || "Генерация";
-    const promptBackup = prompt; // Запоминаем промпт для сохранения в историю
+    const promptBackup = prompt;
 
     try {
       const base64Images = await Promise.all(rawFiles.map((file) => convertFileToBase64(file)));
@@ -358,7 +400,7 @@ export default function NeuroArtist() {
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 shadow-md"
+            className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 shadow-md cursor-pointer"
           >
             {isGenerating ? "Нейросеть генерирует..." : "Запустить генерацию"}
           </button>
@@ -423,7 +465,7 @@ export default function NeuroArtist() {
           ) : (
             (() => {
               const item = history[0];
-              const isLongPrompt = item.prompt.length > 100;
+              const isLongPrompt = item.prompt && item.prompt.length > 100;
               return (
                 <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3 relative">
                   <div className="flex justify-between items-center text-xs">
@@ -443,7 +485,7 @@ export default function NeuroArtist() {
                       {isLongPrompt && (
                         <button
                           onClick={() => setIsPromptExpanded(!isPromptExpanded)}
-                          className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold flex items-center gap-1"
+                          className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold flex items-center gap-1 cursor-pointer"
                         >
                           <span>{isPromptExpanded ? "Свернуть" : "Развернуть"}</span>
                           <span>{isPromptExpanded ? "↑" : "↓"}</span>
@@ -452,7 +494,7 @@ export default function NeuroArtist() {
 
                       <button
                         onClick={() => handleCopyText(item.prompt)}
-                        className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                       >
                         {copiedPrompt ? "✓ Скопировано" : "📋 Скопировать"}
                       </button>
