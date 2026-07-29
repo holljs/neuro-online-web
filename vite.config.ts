@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr'; // 👈 Добавили импорт SVGR
 import fs from 'fs';
 import path from 'path';
 
@@ -58,6 +59,7 @@ const generateSitemap = () => ({
 export default defineConfig({
   plugins: [
     react(),
-    generateSitemap(), // 👈 Подключаем наш встроенный плагин
+    svgr(), // 👈 ПОДКЛЮЧИЛИ ПЛАГИН ДЛЯ SVG ИКОНОК
+    generateSitemap(),
   ],
 });
