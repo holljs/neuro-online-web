@@ -22,6 +22,7 @@ import NeuroBro from "./pages/NeuroBro";
 import NeuroArtist from "./pages/NeuroArtist";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
+import KidsHub from "./pages/KidsHub";
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
             <Route index path="/" element={<Home />} />
             <Route path="/neuro-bro" element={<NeuroBro />} />
             <Route path="/neuro-artist" element={<NeuroArtist />} />
+            <Route path="/kids" element={<KidsHub />} />
             <Route path="/history" element={<HistoryPage />} />
 
             {/* Others Page */}
