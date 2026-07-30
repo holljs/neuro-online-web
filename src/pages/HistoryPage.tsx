@@ -16,6 +16,7 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+  const [failedIds, setFailedIds] = useState<Record<string, boolean>>({});
 
   // 🚀 Состояния для серверной пагинации
   const [offset, setOffset] = useState(0);
@@ -30,7 +31,6 @@ export default function HistoryPage() {
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
     if (idFromUrl) return idFromUrl;
     
-    // Резервные варианты
     return localStorage.getItem("vk_user_id") || localStorage.getItem("user_id") || "233876992";
   };
 
@@ -49,7 +49,6 @@ export default function HistoryPage() {
       const data = await res.json();
 
       if (data.success && data.items) {
-        // Преобразуем формат с бэкенда под интерфейс
         const formattedItems: HistoryItem[] = data.items.map((item: any) => ({
           id: String(item.id),
           modeName: item.model || "Генерация",
@@ -60,23 +59,17 @@ export default function HistoryPage() {
 
         if (isInitial) {
           setHistory(formattedItems);
-          setOffset(LIMIT);
+          setOffset(formattedItems.length);
         } else {
           setHistory((prev) => [...prev, ...formattedItems]);
-          setOffset((prev) => prev + LIMIT);
+          setOffset((prev) => prev + formattedItems.length);
         }
 
-        setHasMore(data.has_more);
+        // Кнопка показывается, если сервер вернул ровно LIMIT элементов (значит, есть ещё)
+        setHasMore(data.has_more || formattedItems.length === LIMIT);
       }
     } catch (e) {
       console.error("Ошибка загрузки истории с сервера:", e);
-      // Если сервер не ответил, берем запас из localStorage
-      if (isInitial) {
-        try {
-          const saved = localStorage.getItem("neuro_artist_history");
-          if (saved) setHistory(JSON.parse(saved));
-        } catch (err) {}
-      }
     } finally {
       setLoading(false);
     }
@@ -111,13 +104,6 @@ export default function HistoryPage() {
     return `https://neuro-master.online${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}`;
   };
 
-  const getPosterUrl = (item: HistoryItem): string | undefined => {
-    if (item.images && item.images.length > 0 && item.images[0]) {
-      return item.images[0];
-    }
-    return undefined;
-  };
-
   const handleDownload = async (url: string, filename: string, isVideo: boolean, isAudio: boolean) => {
     if (!url) return;
     try {
@@ -149,7 +135,11 @@ export default function HistoryPage() {
     }
   };
 
+  // Фильтрация истории
   const filteredHistory = history.filter((item) => {
+    // Если картинка битая/незагрузившаяся — убираем её из отображения
+    if (failedIds[item.id]) return false;
+
     const url = getMediaUrl(item);
     if (!url) return false;
 
@@ -211,7 +201,7 @@ export default function HistoryPage() {
           >
             Изображения ({history.filter((i) => {
               const u = getMediaUrl(i);
-              return u && !isVideoUrl(u) && !isAudioUrl(u);
+              return u && !isVideoUrl(u) && !isAudioUrl(u) && !failedIds[i.id];
             }).length})
           </button>
 
@@ -225,7 +215,7 @@ export default function HistoryPage() {
           >
             Видео ({history.filter((i) => {
               const u = getMediaUrl(i);
-              return u && isVideoUrl(u);
+              return u && isVideoUrl(u) && !failedIds[i.id];
             }).length})
           </button>
 
@@ -239,12 +229,12 @@ export default function HistoryPage() {
           >
             Музыка ({history.filter((i) => {
               const u = getMediaUrl(i);
-              return u && isAudioUrl(u);
+              return u && isAudioUrl(u) && !failedIds[i.id];
             }).length})
           </button>
         </div>
 
-        {/* Сетка результативных карточек */}
+        {/* Сетка карточек */}
         {filteredHistory.length === 0 ? (
           <div className="py-16 text-center text-gray-400 text-xs">
             <p className="font-medium text-gray-600 dark:text-gray-300 text-sm mb-1">
@@ -259,7 +249,6 @@ export default function HistoryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredHistory.map((item) => {
                 const mediaUrl = getMediaUrl(item);
-                const posterUrl = getPosterUrl(item);
                 const isVideo = isVideoUrl(mediaUrl);
                 const isAudio = isAudioUrl(mediaUrl);
                 const isExpanded = !!expandedIds[item.id];
@@ -271,7 +260,6 @@ export default function HistoryPage() {
                     className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 p-3.5 flex flex-col justify-between space-y-3"
                   >
                     <div className="space-y-2.5">
-                      {/* Заголовок карточки */}
                       <div className="flex justify-between items-center text-xs">
                         <span className="font-bold text-gray-900 dark:text-white">
                           {item.modeName}
@@ -279,38 +267,35 @@ export default function HistoryPage() {
                         <span className="text-gray-400 text-[10px] font-mono">{item.date}</span>
                       </div>
 
-                      {/* Отображение Медиа */}
                       {mediaUrl && (
                         <div className="relative w-full h-48 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700">
                           {isVideo ? (
                             <video
                               src={mediaUrl}
-                              poster={posterUrl}
                               controls
                               className="w-full h-full object-cover"
+                              onError={() => setFailedIds((prev) => ({ ...prev, [item.id]: true }))}
                             />
                           ) : isAudio ? (
                             <div className="w-full p-3 bg-white dark:bg-gray-900">
-                              <audio src={mediaUrl} controls className="w-full" />
+                              <audio
+                                src={mediaUrl}
+                                controls
+                                className="w-full"
+                                onError={() => setFailedIds((prev) => ({ ...prev, [item.id]: true }))}
+                              />
                             </div>
                           ) : (
                             <img
                               src={mediaUrl}
                               alt="Результат"
                               className="w-full h-full object-cover rounded-lg"
-                              onError={(e) => {
-                                const target = e.target as HTMLElement;
-                                target.style.display = "none";
-                                if (target.parentElement) {
-                                  target.parentElement.innerHTML = '<div class="text-[11px] text-gray-400 text-center p-4">⏳ Срок временного хранения файла истёк</div>';
-                                }
-                              }}
+                              onError={() => setFailedIds((prev) => ({ ...prev, [item.id]: true }))}
                             />
                           )}
                         </div>
                       )}
 
-                      {/* Сворачиваемый блок с Промптом */}
                       <div className="bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-200/70 dark:border-gray-800 space-y-1">
                         <p className={`text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic ${!isExpanded ? "line-clamp-2" : ""}`}>
                           "{item.prompt}"
@@ -336,7 +321,6 @@ export default function HistoryPage() {
                       </div>
                     </div>
 
-                    {/* Скачивание и удаление */}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-800 text-xs">
                       <button
                         onClick={() => handleDownload(mediaUrl, `neuro_master_${item.id}`, isVideo, isAudio)}
@@ -357,7 +341,7 @@ export default function HistoryPage() {
               })}
             </div>
 
-            {/* 🔥 КНОПКА «ПОКАЗАТЬ ЕЩЁ» (ПАГИНАЦИЯ) 🔥 */}
+            {/* 🔥 КНОПКА «ПОКАЗАТЬ ЕЩЁ» 🔥 */}
             {hasMore && (
               <div className="mt-8 text-center">
                 <button
