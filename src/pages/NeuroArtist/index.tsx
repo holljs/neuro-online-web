@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-// 🎨 CSS Анимации для лоадера (вставляем прямо в компонент)
+// 🎨 CSS Анимации для лоадера
 const loaderStyles = `
   @keyframes shimmer {
     0% { background-position: -200% 0; }
@@ -223,7 +223,7 @@ export default function NeuroArtist() {
     if (!prompt.trim() && activeMode !== "gfpgan" && selectedImages.length === 0) return;
 
     setIsGenerating(true);
-    setCurrentResultUrl(null); // Сбрасываем старый результат
+    setCurrentResultUrl(null);
 
     const currentModeObj = currentModes.find((m) => m.id === activeMode);
     const modeName = currentModeObj?.name || "Генерация";
@@ -263,10 +263,8 @@ export default function NeuroArtist() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
-      {/* Подключаем стили лоадера */}
       <style>{loaderStyles}</style>
 
-      {/* Полноэкранное модальное окно просмотр */}
       {modalMedia && (
         <div
           className="fixed inset-0 z-[999999] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md cursor-pointer"
@@ -454,33 +452,20 @@ export default function NeuroArtist() {
         {(isGenerating || currentResultUrl) && (
           <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900 text-center shadow-sm relative overflow-hidden min-h-[300px] sm:min-h-[380px] flex flex-col items-center justify-center">
             
-            {/* 1. КРАСИВЫЙ РЕЛОУДЕР (АДАПТИВНЫЙ ДЛЯ МОБИЛОК) */}
+            {/* 1. КРАСИВЫЙ РЕЛОУДЕР */}
             {isGenerating && (
               <div className="absolute inset-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 animate-pulse-slow">
                 <div className="w-full max-w-sm h-48 sm:h-64 rounded-2xl animate-shimmer mb-4 sm:mb-6 border border-gray-100 dark:border-gray-800 flex items-center justify-center px-4">
                    <svg className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 spin-mini" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                   </svg>
                 </div>
                 <h3 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white mb-1 sm:mb-2">
                   Нейросеть творит магию
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-500 max-w-xs sm:max-w-sm leading-normal">
                   Это может занять от пары секунд до 3 минут. Пожалуйста, не закрывайте страницу.
-                </p>
-              </div>
-            )}
-                   <svg className="w-16 h-16 text-blue-200 dark:text-blue-900spin-mini" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                </div>
-                <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-2">
-                  Нейросеть творит магию
-                </h3>
-                <p className="text-sm text-gray-500 max-w-sm">
-                  Это может занять от нескольких секунд до 3-х минут для видео и сложных миксов. Пожалуйста, не закрывайте страницу.
                 </p>
               </div>
             )}
@@ -492,21 +477,21 @@ export default function NeuroArtist() {
                   Результат готов
                 </h3>
                 
-                <div className="relative z-0">
-                {isVideoUrl(currentResultUrl) ? (
-                  <video src={currentResultUrl} controls autoPlay loop className="mx-auto rounded-xl max-h-[500px] w-full object-contain shadow-lg" />
-                ) : isAudioUrl(currentResultUrl) ? (
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                    <audio src={currentResultUrl} controls className="w-full mx-auto" />
-                  </div>
-                ) : (
-                  <img
-                    src={currentResultUrl}
-                    alt="Результат"
-                    onClick={() => setModalMedia(currentResultUrl)}
-                    className="mx-auto rounded-xl max-h-[500px] object-contain cursor-pointer hover:opacity-95 transition shadow-lg border border-gray-100 dark:border-gray-800"
-                  />
-                )}
+                <div className="relative z-0 w-full">
+                  {isVideoUrl(currentResultUrl) ? (
+                    <video src={currentResultUrl} controls autoPlay loop className="mx-auto rounded-xl max-h-[500px] w-full object-contain shadow-lg" />
+                  ) : isAudioUrl(currentResultUrl) ? (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                      <audio src={currentResultUrl} controls className="w-full mx-auto" />
+                    </div>
+                  ) : (
+                    <img
+                      src={currentResultUrl}
+                      alt="Результат"
+                      onClick={() => setModalMedia(currentResultUrl)}
+                      className="mx-auto rounded-xl max-h-[500px] object-contain cursor-pointer hover:opacity-95 transition shadow-lg border border-gray-100 dark:border-gray-800"
+                    />
+                  )}
                 </div>
 
                 <div className="mt-5 relative z-0">
@@ -517,7 +502,6 @@ export default function NeuroArtist() {
                     download
                     className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-sm"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="getMediaUrl"></path></svg>
                     <span>Скачать файл</span>
                   </a>
                 </div>
@@ -609,7 +593,7 @@ export default function NeuroArtist() {
                           download
                           className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="getMediaUrl"></path></svg>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                           <span>Скачать результат</span>
                         </a>
                       </div>
