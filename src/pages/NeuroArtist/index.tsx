@@ -352,33 +352,48 @@ export default function NeuroArtist() {
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
                 Прикрепить изображения
               </label>
-              <label className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 transition bg-gray-50/50 dark:bg-gray-800/30 block">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Нажмите, чтобы прикрепить файлы, или перетащите их сюда
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Поддерживаются JPG, PNG, WEBP</p>
-              </label>
 
-              {selectedImages.length > 0 && (
-                <div className="flex flex-wrap gap-3 mt-4">
+              {/* 🚀 КОМПАКТНЫЙ БЛОК ЗАГРУЗКИ */}
+              {selectedImages.length === 0 ? (
+                <label className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 transition bg-gray-50/50 dark:bg-gray-800/30 block">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Нажмите, чтобы прикрепить файлы, или перетащите их сюда
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Поддерживаются JPG, PNG, WEBP</p>
+                </label>
+              ) : (
+                <div className="flex flex-wrap gap-3 items-center">
                   {selectedImages.map((src, index) => (
-                    <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div key={index} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm group">
                       <img src={src} alt="Загруженное" className="w-full h-full object-cover" />
                       <button
+                        type="button"
                         onClick={() => handleRemoveImage(index)}
-                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black/80"
+                        className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition shadow-md cursor-pointer"
                       >
                         ✕
                       </button>
                     </div>
                   ))}
+
+                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-blue-400/60 dark:border-blue-500/40 hover:border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 flex flex-col items-center justify-center cursor-pointer transition text-blue-600 dark:text-blue-400 hover:scale-105">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <span className="text-xl font-bold leading-none mb-0.5">+</span>
+                    <span className="text-[10px] font-semibold">Ещё</span>
+                  </label>
                 </div>
               )}
             </div>
