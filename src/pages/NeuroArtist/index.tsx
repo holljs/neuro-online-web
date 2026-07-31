@@ -65,21 +65,22 @@ export default function NeuroArtist() {
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  // Определение user_id
-  const getUserId = (): number => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
-  if (idFromUrl) return parseInt(idFromUrl);
+  // 🔒 СТРОГОЕ ОПРЕДЕЛЕНИЕ VK USER ID (БЕЗ ФАНТОМНЫХ И АНОНИМНЫХ ID)
+  const getUserId = (): number | null => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
+    if (idFromUrl) {
+      localStorage.setItem("user_id", idFromUrl);
+      return parseInt(idFromUrl);
+    }
 
-  // Ищем анонимный ID в localStorage
-  let storedId = localStorage.getItem("user_id");
-  if (!storedId) {
-    // Если его нет — создаем случайный 9-значный ID для нового гостя
-    storedId = String(Math.floor(100000000 + Math.random() * 900000000));
-    localStorage.setItem("user_id", storedId);
-  }
-  return parseInt(storedId);
-};
+    const storedId = localStorage.getItem("user_id");
+    if (storedId && storedId !== "233876992") {
+      return parseInt(storedId);
+    }
+
+    return null;
+  };
 
   const userId = getUserId();
 
@@ -94,6 +95,7 @@ export default function NeuroArtist() {
 
   // 📡 Загрузка последнего фото с сервера
   const loadLatestServerHistory = async () => {
+    if (!userId) return;
     try {
       const res = await axios.get(`${API_BASE}/history/${userId}?limit=1&_t=${Date.now()}`);
       if (res.data.success && res.data.items && res.data.items.length > 0) {
@@ -117,7 +119,9 @@ export default function NeuroArtist() {
   };
 
   useEffect(() => {
-    loadLatestServerHistory();
+    if (userId) {
+      loadLatestServerHistory();
+    }
   }, [userId]);
 
   useEffect(() => {
@@ -190,6 +194,7 @@ export default function NeuroArtist() {
   };
 
   const checkStatus = async (taskId: string, modeObjName: string, base64Images: string[], currentPrompt: string) => {
+    if (!userId) return;
     try {
       const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${userId}`, {
         headers: { "X-Bot-Token": BOT_TOKEN },
@@ -228,6 +233,12 @@ export default function NeuroArtist() {
   };
 
   const handleGenerate = async () => {
+    // 🔒 ПРОВЕРКА АВТОРИЗАЦИИ ВКОНТАКТЕ
+    if (!userId) {
+      alert("🔒 Пожалуйста, авторизуйтесь через ВКонтакте, чтобы использовать генерации!");
+      return;
+    }
+
     if (!prompt.trim() && activeMode !== "gfpgan" && selectedImages.length === 0) return;
 
     setIsGenerating(true);
@@ -361,7 +372,6 @@ export default function NeuroArtist() {
                 Прикрепить изображения
               </label>
 
-              {/* 🚀 КОМПАКТНЫЙ БЛОК ЗАГРУЗКИ */}
               {selectedImages.length === 0 ? (
                 <label className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 transition bg-gray-50/50 dark:bg-gray-800/30 block">
                   <input
