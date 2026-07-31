@@ -148,6 +148,7 @@ export default function NeuroArtist() {
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
+  // ИСПРАВЛЕНО: Загрузка файлов на сервер для получения HTTP-ссылок
   const uploadImagesToServer = async (files: File[]): Promise<string[]> => {
     const uploadedUrls: string[] = [];
     for (const file of files) {
@@ -217,13 +218,14 @@ export default function NeuroArtist() {
     const promptBackup = prompt;
 
     try {
+      // 1. СНАЧАЛА загружаем картинки и получаем HTTP-ссылки
       const serverImageUrls = await uploadImagesToServer(rawFiles);
 
       const payload: any = {
         user_id: userId,
         model: activeMode,
-        prompt: prompt || "",
-        image_urls: serverImageUrls,
+        prompt: prompt || "", // ЗАЩИТА: гарантируем, что не придет null
+        image_urls: serverImageUrls, // Отправляем ссылки, а не Base64!
       };
       if (activeMode === "music") {
         payload.lyrics = prompt;
