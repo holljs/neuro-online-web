@@ -23,8 +23,21 @@ export default function NeuroBro() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
-  // Получаем актуальный user_id из localStorage
-  const userId = parseInt(localStorage.getItem("user_id") || "233876992");
+  // Безопасное определение user_id для исключения путаницы с чужими ID
+  const getUserId = (): number => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
+    if (idFromUrl) return parseInt(idFromUrl);
+
+    let storedId = localStorage.getItem("user_id");
+    if (!storedId || storedId === "233876992") {
+      storedId = String(Math.floor(100000000 + Math.random() * 900000000));
+      localStorage.setItem("user_id", storedId);
+    }
+    return parseInt(storedId);
+  };
+
+  const userId = getUserId();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +122,7 @@ export default function NeuroBro() {
         `${API_BASE}/chat/clear`,
         { 
           user_id: userId,
-          prompt: "clear" // 👈 ДОБАВИЛИ ЗАГЛУШКУ! Теперь бэкенд точно примет запрос
+          prompt: "clear"
         },
         { headers: { "X-Bot-Token": BOT_TOKEN } }
       );
@@ -117,7 +130,6 @@ export default function NeuroBro() {
       setShowConfirmModal(false);
     } catch (e) {
       console.error("Ошибка очистки чата:", e);
-      // В случае ошибки сбрасываем локально
       setMessages([]);
       setShowConfirmModal(false);
     } finally {
