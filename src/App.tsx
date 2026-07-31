@@ -24,6 +24,7 @@ import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import KidsHub from "./pages/KidsHub";
 import MalyshPage from "./pages/KidsHub/Malysh";
+import GeniyPage from "./pages/KidsHub/Geniy";
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/neuro-artist" element={<NeuroArtist />} />
             <Route path="/kids" element={<KidsHub />} />
             <Route path="/kids/malysh" element={<MalyshPage />} />
+            <Route path="/kids/geniy" element={<GeniyPage />} />
             <Route path="/history" element={<HistoryPage />} />
 
             {/* Others Page */}
