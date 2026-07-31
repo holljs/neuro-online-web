@@ -161,7 +161,7 @@ export default function UserDropdown() {
                 />
               </svg>
               Поддержка
-            </Link>
+            </a>
           </li>
         </ul>
 
