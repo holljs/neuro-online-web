@@ -5,20 +5,20 @@ type ExamType = "oge" | "ege" | "vpr" | "olymp";
 type Subject = {
   id: string;
   name: string;
-  icon: string;
+  code: string;
 };
 
 const subjects: Subject[] = [
-  { id: "math", name: "Математика", icon: "📐" },
-  { id: "rus", name: "Русский язык", icon: "📚" },
-  { id: "phys", name: "Физика", icon: "⚡" },
-  { id: "chem", name: "Химия", icon: "🧪" },
-  { id: "inf", name: "Информатика", icon: "💻" },
-  { id: "bio", name: "Биология", icon: "🧬" },
-  { id: "geo", name: "География", icon: "🌍" },
-  { id: "soc", name: "Обществознание", icon: "📊" },
-  { id: "hist", name: "История", icon: "📜" },
-  { id: "eng", name: "Английский язык", icon: "🇬🇧" },
+  { id: "math", name: "Математика", code: "MATH" },
+  { id: "rus", name: "Русский язык", code: "RUS" },
+  { id: "phys", name: "Физика", code: "PHYS" },
+  { id: "chem", name: "Химия", code: "CHEM" },
+  { id: "inf", name: "Информатика", code: "INFO" },
+  { id: "bio", name: "Биология", code: "BIO" },
+  { id: "geo", name: "География", code: "GEO" },
+  { id: "soc", name: "Обществознание", code: "SOC" },
+  { id: "hist", name: "История", code: "HIST" },
+  { id: "eng", name: "Английский язык", code: "ENG" },
 ];
 
 export default function RepetitorPage() {
@@ -87,7 +87,9 @@ export default function RepetitorPage() {
               onClick={() => setActiveSubject(sub)}
               className="p-5 rounded-2xl border border-gray-200/80 bg-white hover:border-blue-300 hover:bg-blue-50/40 transition cursor-pointer flex flex-col justify-between h-32 shadow-sm hover:shadow group"
             >
-              <div className="text-2xl">{sub.icon}</div>
+              <span className="text-xs font-extrabold tracking-wider text-blue-600/70 group-hover:text-blue-700">
+                {sub.code}
+              </span>
               <div>
                 <h4 className="font-bold text-sm text-gray-900 group-hover:text-blue-600 transition">
                   {sub.name}
@@ -99,42 +101,34 @@ export default function RepetitorPage() {
         </div>
       </div>
 
-      {/* Окно тестирования */}
+      {/* Окно активного тестирования через iframe */}
       {activeSubject && (
-        <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-6">
-          <div className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
-            <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-3xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl relative">
+            
+            {/* Шапка модального окна */}
+            <div className="p-3 sm:p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-lg text-gray-900">
-                  {activeSubject.name} — {examTitles[selectedExam]}
+                  Нейро-Репетитор: {activeSubject.name}
                 </h3>
-                <span className="text-xs text-gray-500">Запуск ИИ-тестирования</span>
+                <span className="text-xs text-gray-500">{examTitles[selectedExam]}</span>
               </div>
               <button
                 onClick={() => setActiveSubject(null)}
                 className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold text-xs rounded-xl transition cursor-pointer"
               >
-                ✕ Закрыть
+                Закрыть
               </button>
             </div>
             
-            <div className="flex-1 bg-blue-50/30 p-6 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="text-6xl mb-2">{activeSubject.icon}</div>
-              <h4 className="text-2xl font-bold text-gray-900">
-                Готовы начать вариант?
-              </h4>
-              <p className="text-sm text-gray-600 max-w-md leading-relaxed">
-                Вам будут предложены актуальные задания. После отправки ответов ИИ-арбитр на базе GPT-4.1 проверит результат и подробно разберет каждую ошибку.
-              </p>
-              <button
-                onClick={() => {
-                  alert(`Запуск варианта по предмету ${activeSubject.name} (${examTitles[selectedExam]})`);
-                }}
-                className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition shadow-md cursor-pointer"
-              >
-                Начать вариант (Списать 2 кр.)
-              </button>
-            </div>
+            {/* Полноэкранный iframe с GitHub Pages */}
+            <iframe
+              src={`https://holljs.github.io/neuro-repetitor-bot/index.html?v=2&exam=${selectedExam}&subject=${activeSubject.id}`}
+              className="w-full flex-1 border-0"
+              title={activeSubject.name}
+              allow="autoplay; microphone"
+            />
           </div>
         </div>
       )}
