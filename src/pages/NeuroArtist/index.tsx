@@ -65,17 +65,18 @@ export default function NeuroArtist() {
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  // 🔒 СТРОГОЕ ОПРЕДЕЛЕНИЕ VK USER ID (БЕЗ ФАНТОМНЫХ И АНОНИМНЫХ ID)
+  // 🔒 ЧИСТОЕ И СТРОГОЕ ОПРЕДЕЛЕНИЕ USER ID
   const getUserId = (): number | null => {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
+
     if (idFromUrl) {
       localStorage.setItem("user_id", idFromUrl);
       return parseInt(idFromUrl);
     }
 
     const storedId = localStorage.getItem("user_id");
-    if (storedId && storedId !== "233876992") {
+    if (storedId && storedId !== "null" && storedId !== "undefined") {
       return parseInt(storedId);
     }
 
