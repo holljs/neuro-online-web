@@ -16,7 +16,7 @@ export default function NeuroBro() {
   const [selectedModel, setSelectedModel] = useState("gpt4o_mini");
   const [selectedPersona, setSelectedPersona] = useState("default");
   const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
-  const [attachedUrl, setAttachedUrl] = useState<string | null>(null);
+  const [attachedUrl, setAttachedUrl] = useState<string | null>(null); // Храним URL для отправки на сервер
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
@@ -31,7 +31,7 @@ export default function NeuroBro() {
     if (storedId && storedId !== "null" && storedId !== "undefined") {
       return parseInt(storedId);
     }
-    return null;
+    return null; // Возвращаем null, если не авторизован
   };
 
   const userId = getUserId();
@@ -80,10 +80,12 @@ export default function NeuroBro() {
     fetchHistory();
   }, [userId]);
 
+  // ИСПРАВЛЕНО: Загрузка файла на сервер и получение URL вместо Base64
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !userId) return;
     const file = e.target.files[0];
     
+    // Показываем превью сразу для UX
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
@@ -102,7 +104,7 @@ export default function NeuroBro() {
         headers: { "X-Bot-Token": BOT_TOKEN, "Content-Type": "multipart/form-data" },
       });
       if (res.data.success && res.data.url) {
-        setAttachedUrl(res.data.url);
+        setAttachedUrl(res.data.url); // Сохраняем HTTP-ссылку для отправки в чат
       } else {
         alert("Ошибка загрузки изображения на сервер");
         setAttachedPreview(null);
@@ -146,6 +148,7 @@ export default function NeuroBro() {
     setMessages((prev) => [...prev, { role: "user", content: userText }]);
     setIsLoading(true);
     
+    // Отправляем именно HTTP-ссылку, а не Base64
     const attachments: string[] = attachedUrl ? [attachedUrl] : [];
     setAttachedPreview(null);
     setAttachedUrl(null);
@@ -179,6 +182,7 @@ export default function NeuroBro() {
     }
   };
 
+  // Если пользователь не авторизован, показываем кнопку входа
   if (!userId) {
     return (
       <div className="flex flex-col h-[calc(100vh-120px)] items-center justify-center gap-4 text-center p-6">
@@ -189,7 +193,7 @@ export default function NeuroBro() {
         <p className="text-sm text-gray-500 max-w-sm mb-4">Для доступа к чату и сохранения истории, пожалуйста, авторизуйтесь через ВКонтакте.</p>
         <button 
           onClick={() => {
-            const VK_APP_ID = "54603838";
+            const VK_APP_ID = "54603838"; // Замените на реальный ID вашего приложения VK
             const redirectUri = encodeURIComponent(window.location.href.split('?')[0]);
             window.location.href = `https://oauth.vk.com/authorize?client_id=${VK_APP_ID}&display=page&redirect_uri=${redirectUri}&scope=messages&response_type=code&v=5.131`;
           }}
