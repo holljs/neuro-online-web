@@ -113,13 +113,15 @@ export default function GeniyPage() {
         </div>
       )}
 
-      {/* Экран активного тренажёра */}
+      {/* Окно активного тренажёра через iframe */}
       {activeModule && (
-        <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-6">
-          <div className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
-            <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-3xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl relative">
+            
+            {/* Шапка модального окна */}
+            <div className="p-3 sm:p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-bold text-lg text-gray-900">
-                Тренажёр: {activeModule.title}
+                Нейро-Гений: {activeModule.title}
               </h3>
               <button
                 onClick={() => setActiveModule(null)}
@@ -129,15 +131,13 @@ export default function GeniyPage() {
               </button>
             </div>
             
-            <div className="flex-1 bg-purple-50/40 p-6 flex flex-col items-center justify-center text-center">
-              <div className="text-6xl mb-4">🧩</div>
-              <h4 className="text-2xl font-bold text-gray-800 mb-2">
-                Модуль «{activeModule.title}»
-              </h4>
-              <p className="text-sm text-gray-600 max-w-md">
-                Интерактивная панель тренажёра готова к работе.
-              </p>
-            </div>
+            {/* Встроенный iframe с GitHub Pages */}
+            <iframe
+              src={`https://holljs.github.io/neuro-genius-vk/index.html?module=${activeModule.id}&sub=${hasSub ? 1 : 0}`}
+              className="w-full flex-1 border-0"
+              title={activeModule.title}
+              allow="autoplay; microphone"
+            />
           </div>
         </div>
       )}
