@@ -76,7 +76,6 @@ export default function MalyshPage() {
           <button
             onClick={() => {
               window.open("https://vk.com/neiro_malish", "_blank");
-              // На веб-версии имитируем активацию VIP после клика
               setHasVip(true);
             }}
             className="px-5 py-2.5 bg-white text-orange-600 font-bold text-xs sm:text-sm rounded-xl hover:bg-amber-50 transition shadow-sm whitespace-nowrap cursor-pointer"
@@ -141,14 +140,18 @@ export default function MalyshPage() {
         </div>
       )}
 
-      {/* Окно выбранной игры */}
+      {/* Окно выбранной игры с подключённым iframe */}
       {activeRoom && (
-        <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-6">
-          <div className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
-            <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-bold text-lg text-gray-900">
-                Комната: {activeRoom.title}
-              </h3>
+        <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-3xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl relative">
+            
+            {/* Шапка окна */}
+            <div className="p-3 sm:p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-900 text-base sm:text-lg">
+                  Нейро-Малыш: {activeRoom.title}
+                </span>
+              </div>
               <button
                 onClick={() => setActiveRoom(null)}
                 className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold text-xs rounded-xl transition cursor-pointer"
@@ -157,16 +160,13 @@ export default function MalyshPage() {
               </button>
             </div>
             
-            {/* Встроенная игровая область */}
-            <div className="flex-1 bg-amber-50/50 p-6 flex flex-col items-center justify-center text-center">
-              <div className="text-6xl mb-4">🦆</div>
-              <h4 className="text-2xl font-bold text-gray-800 mb-2">
-                Утя приветствует тебя в комнате «{activeRoom.title}»!
-              </h4>
-              <p className="text-sm text-gray-600 max-w-md">
-                Здесь запускается интерактивный модуль для ребёнка. Утя готов играть и учиться!
-              </p>
-            </div>
+            {/* Полноэкранный iframe с GitHub Pages */}
+            <iframe
+              src={`https://holljs.github.io/neuro-malysh-app/index.html?v=3&room=${activeRoom.id}&vip=${hasVip ? 1 : 0}`}
+              className="w-full flex-1 border-0"
+              title={activeRoom.title}
+              allow="autoplay; microphone"
+            />
           </div>
         </div>
       )}
