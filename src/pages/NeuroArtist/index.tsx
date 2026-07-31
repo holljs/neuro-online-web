@@ -67,11 +67,19 @@ export default function NeuroArtist() {
 
   // Определение user_id
   const getUserId = (): number => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
-    if (idFromUrl) return parseInt(idFromUrl);
-    return parseInt(localStorage.getItem("user_id") || "233876992");
-  };
+  const urlParams = new URLSearchParams(window.location.search);
+  const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
+  if (idFromUrl) return parseInt(idFromUrl);
+
+  // Ищем анонимный ID в localStorage
+  let storedId = localStorage.getItem("user_id");
+  if (!storedId) {
+    // Если его нет — создаем случайный 9-значный ID для нового гостя
+    storedId = String(Math.floor(100000000 + Math.random() * 900000000));
+    localStorage.setItem("user_id", storedId);
+  }
+  return parseInt(storedId);
+};
 
   const userId = getUserId();
 
