@@ -73,7 +73,7 @@ export default function NeuroArtist() {
           prompt: lastItem.prompt || "Без текста",
           date: lastItem.created_at ? new Date(lastItem.created_at).toLocaleDateString("ru-RU") : "Недавно",
           images: [],
-          resultUrl: lastItem.result_url
+          resultUrl: lastItem.result_url,
         };
         setHistory((prev) => {
           if (prev.length > 0 && prev[0].id === serverHistoryItem.id) return prev;
@@ -148,7 +148,6 @@ export default function NeuroArtist() {
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
-  // ИСПРАВЛЕНО: Загрузка файлов на сервер для получения HTTP-ссылок
   const uploadImagesToServer = async (files: File[]): Promise<string[]> => {
     const uploadedUrls: string[] = [];
     for (const file of files) {
@@ -169,8 +168,22 @@ export default function NeuroArtist() {
     return uploadedUrls;
   };
 
-  const checkStatus = async (taskId: string, modeObjName: string, imageUrls: string[], currentPrompt: string) => {
+  // ⏳ Увеличено время ожидания до 100 попыток (до 5 минут)
+  const checkStatus = async (
+    taskId: string,
+    modeObjName: string,
+    imageUrls: string[],
+    currentPrompt: string,
+    attemptCount = 0
+  ) => {
     if (!userId) return;
+
+    if (attemptCount > 100) {
+      alert("⏳ Генерация занимает больше времени, чем обычно. Пожалуйста, проверьте результат чуть позже в разделе «История».");
+      setIsGenerating(false);
+      return;
+    }
+
     try {
       const res = await axios.get(`${API_BASE}/task_status/${taskId}?user_id=${userId}`, {
         headers: { "X-Bot-Token": BOT_TOKEN },
@@ -186,7 +199,7 @@ export default function NeuroArtist() {
           id: taskId,
           modeName: modeObjName,
           prompt: currentPrompt || "Генерация медиа",
-          date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+          date: new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }),
           images: imageUrls.length > 0 ? imageUrls : selectedImages,
           resultUrl: finalUrl,
         };
@@ -196,11 +209,11 @@ export default function NeuroArtist() {
         alert("Ошибка генерации: " + (res.data.error || "Неизвестная ошибка"));
         setIsGenerating(false);
       } else {
-        setTimeout(() => checkStatus(taskId, modeObjName, imageUrls, currentPrompt), 3000);
+        setTimeout(() => checkStatus(taskId, modeObjName, imageUrls, currentPrompt, attemptCount + 1), 3000);
       }
     } catch (e) {
       console.error("Ошибка проверки статуса:", e);
-      setIsGenerating(false);
+      setTimeout(() => checkStatus(taskId, modeObjName, imageUrls, currentPrompt, attemptCount + 1), 4000);
     }
   };
 
@@ -210,7 +223,7 @@ export default function NeuroArtist() {
       return;
     }
     if (!prompt.trim() && activeMode !== "gfpgan" && selectedImages.length === 0) return;
-    
+
     setIsGenerating(true);
     setCurrentResultUrl(null);
     const currentModeObj = currentModes.find((m) => m.id === activeMode);
@@ -218,14 +231,13 @@ export default function NeuroArtist() {
     const promptBackup = prompt;
 
     try {
-      // 1. СНАЧАЛА загружаем картинки и получаем HTTP-ссылки
       const serverImageUrls = await uploadImagesToServer(rawFiles);
 
       const payload: any = {
         user_id: userId,
         model: activeMode,
-        prompt: prompt || "", // ЗАЩИТА: гарантируем, что не придет null
-        image_urls: serverImageUrls, // Отправляем ссылки, а не Base64!
+        prompt: prompt || "",
+        image_urls: serverImageUrls,
       };
       if (activeMode === "music") {
         payload.lyrics = prompt;
@@ -237,7 +249,7 @@ export default function NeuroArtist() {
       });
 
       if (response.data.success && response.data.task_id) {
-        checkStatus(response.data.task_id, modeName, serverImageUrls, promptBackup);
+        checkStatus(response.data.task_id, modeName, serverImageUrls, promptBackup, 0);
       } else {
         alert("Не удалось создать задачу на сервере");
         setIsGenerating(false);
