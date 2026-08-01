@@ -22,10 +22,7 @@ import NeuroBro from "./pages/NeuroBro";
 import NeuroArtist from "./pages/NeuroArtist";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
-import KidsHub from "./pages/KidsHub";
-import MalyshPage from "./pages/KidsHub/Malysh";
-import GeniyPage from "./pages/KidsHub/Geniy";
-import RepetitorPage from "./pages/KidsHub/Repetitor";
+import Kids from "./pages/Kids"; // 🔥 Новая чистая страница Детского центра без iframe
 
 export default function App() {
   return (
@@ -38,10 +35,10 @@ export default function App() {
             <Route index path="/" element={<Home />} />
             <Route path="/neuro-bro" element={<NeuroBro />} />
             <Route path="/neuro-artist" element={<NeuroArtist />} />
-            <Route path="/kids" element={<KidsHub />} />
-            <Route path="/kids/malysh" element={<MalyshPage />} />
-            <Route path="/kids/geniy" element={<GeniyPage />} />
-            <Route path="/kids/repetitor" element={<RepetitorPage />} />
+            
+            {/* 🔥 Новый чистый роут Детского центра */}
+            <Route path="/kids" element={<Kids />} />
+            
             <Route path="/history" element={<HistoryPage />} />
 
             {/* Others Page */}
