@@ -22,33 +22,43 @@ export default function NeuroBro() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
-  // 🚀 1. Мгновенная инициализация VK Bridge при запуске в ВК
+  // 🛡 1. Устойчивое состояние userId
+  const [userId, setUserId] = useState<number>(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
+    const storedId = localStorage.getItem("user_id");
+
+    if (storedId && storedId !== "null" && storedId !== "undefined") {
+      return parseInt(storedId);
+    }
+    if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
+      localStorage.setItem("user_id", idFromUrl);
+      localStorage.setItem("vk_user_id", idFromUrl);
+      return parseInt(idFromUrl);
+    }
+    return 233876992; // Твой дефолтный ID
+  });
+
+  // 🚀 2. Инициализация VK Bridge и синхронизация ID при монтировании
   useEffect(() => {
     bridge.send("VKWebAppInit").catch((err) => {
       console.log("Запуск вне VK Mini App:", err);
     });
-  }, []);
 
-  // 🛡 2. Надежная работа с user_id без сброса настоящего аккаунта
-  const getUserId = (): number => {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
-
-    if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
-      localStorage.setItem("user_id", idFromUrl);
-      return parseInt(idFromUrl);
-    }
-
     const storedId = localStorage.getItem("user_id");
+
+    // Если в хранилище уже твой реальный ID, не даем его перебить
     if (storedId && storedId !== "null" && storedId !== "undefined") {
-      return parseInt(storedId);
+      setUserId(parseInt(storedId));
+    } else if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
+      const parsed = parseInt(idFromUrl);
+      localStorage.setItem("user_id", String(parsed));
+      setUserId(parsed);
     }
+  }, []);
 
-    // Дефолтный ID если ничего нет
-    return 233876992;
-  };
-
-  const userId = getUserId();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const models = [
@@ -78,6 +88,7 @@ export default function NeuroBro() {
   }, [messages, isLoading]);
 
   useEffect(() => {
+    if (!userId) return;
     const fetchHistory = async () => {
       try {
         const res = await axios.get(`${API_BASE}/history?user_id=${userId}`, {
@@ -109,6 +120,7 @@ export default function NeuroBro() {
   };
 
   const executeClearHistory = async () => {
+    if (!userId) return;
     setIsClearing(true);
     try {
       await axios.post(
@@ -128,7 +140,7 @@ export default function NeuroBro() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputPrompt.trim() && !attachedPreview) return;
+    if ((!inputPrompt.trim() && !attachedPreview) || !userId) return;
 
     const userText = inputPrompt;
     setInputPrompt("");
