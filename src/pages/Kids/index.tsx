@@ -40,7 +40,7 @@ export default function Kids() {
       description: "Подготовка к ОГЭ, ЕГЭ и олимпиадам с персональным ИИ-анализом",
       price: "От 150 ₽",
       freeTrial: "6 кредитов в подарок",
-      vkAppId: "51800000",
+      vkAppId: "54451631",
       // Нежно-лавандовые софт-тона
       badgeStyle: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
       accentColor: "group-hover:text-indigo-500",
