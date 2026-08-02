@@ -277,7 +277,7 @@ const AppSidebar: React.FC = () => {
             </span>
           ) : (
             <span className="text-2xl font-black text-brand-500 dark:text-white">
-              НО
+              НМ
             </span>
           )}
         </Link>
