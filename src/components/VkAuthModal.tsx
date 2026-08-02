@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 
 interface VkAuthModalProps {
   isOpen: boolean;
@@ -6,59 +6,47 @@ interface VkAuthModalProps {
 }
 
 export default function VkAuthModal({ isOpen, onClose }: VkAuthModalProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Инициализация VK ID SDK
-    if (window.VKIDSDK) {
-      const VKID = window.VKIDSDK;
-
-      VKID.Config.init({
-        app: 54451681, // Твой App ID
-        redirectUrl: "https://neuro-master.online/profile",
-        responseMode: VKID.Config.ResponseMode.Callback,
-        source: VKID.Config.Source.FirstParty,
-      });
-
-      const oneTap = new VKID.OneTap();
-
-      oneTap
-        .render({
-          container: document.getElementById("vkOneTapContainer"),
-          showIconButton: true,
-          skin: VKID.OneTap.Skin.Primary,
-        })
-        .on(VKID.OneTap.Event.LOGIN_SUCCESS, (payload: any) => {
-          const userId = payload.user_id || payload.userId;
-          if (userId) {
-            localStorage.setItem("user_id", String(userId));
-            window.location.href = `/profile?user_id=${userId}`;
-          }
-        });
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[99999] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative text-center">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white font-bold"
-        >
-          ✕
-        </button>
+  const handleVkLogin = () => {
+    // 1. ID твоего приложения VK
+    const clientId = "54603838"; 
+    
+    // 2. Куда ВК должен вернуть пользователя (строго HTTPS!)
+    const redirectUri = encodeURIComponent("https://neuro-master.online/");
 
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-          Авторизация
+    // 3. Формируем прямую ссылку OAuth VK
+    const authUrl = `https://oauth.vk.com/authorize?client_id=${clientId}&display=page&redirect_uri=${redirectUri}&response_type=code&v=5.131`;
+
+    // Перенаправляем на авторизацию VK
+    window.location.href = authUrl;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-gray-800 text-center space-y-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+          Авторизация ВКонтакте
         </h3>
-        <p className="text-xs text-gray-500 mb-6">
-          Войдите через ВКонтакте в 1 клик, чтобы получить доступ к своему балансу и историям генераций.
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Войдите через VK ID для сохранения баланса кредитов и истории генераций.
         </p>
 
-        {/* Контейнер для кнопки One Tap */}
-        <div id="vkOneTapContainer" className="w-full flex justify-center min-h-[44px]"></div>
+        <button
+          type="button"
+          onClick={handleVkLogin}
+          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-md"
+        >
+          <span>Вход через VK ID</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-2 text-xs font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition cursor-pointer"
+        >
+          Закрыть
+        </button>
       </div>
     </div>
   );
