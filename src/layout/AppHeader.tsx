@@ -43,7 +43,7 @@ const AppHeader: React.FC = () => {
 
           <Link to="/" className="flex items-center gap-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-xs shadow-sm">
-                НО
+                НМ
               </span>
               <span className="text-xl font-black tracking-wide text-gray-900 dark:text-white">
                 Нейро-Мастер
