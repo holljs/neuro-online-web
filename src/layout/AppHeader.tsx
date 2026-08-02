@@ -46,7 +46,7 @@ const AppHeader: React.FC = () => {
                 НО
               </span>
               <span className="text-xl font-black tracking-wide text-gray-900 dark:text-white">
-                Нейро-Онлайн
+                Нейро-Мастер
               </span>
           </Link>
 
