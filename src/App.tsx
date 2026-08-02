@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
+import { BrowserRouter as Router, Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -18,12 +18,13 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 
-// Импорты сервисов
+// 🔥 Сервисы
+import Home from "./pages/Home"; // Главная (2 аккуратные карточки Бро и Художник)
 import NeuroBro from "./pages/NeuroBro";
 import NeuroArtist from "./pages/NeuroArtist";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
-import Kids from "./pages/Kids"; // Страница Детского центра
+import Kids from "./pages/Kids"; // Детский центр
 
 export default function App() {
   return (
@@ -31,20 +32,22 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Интерфейс с боковым меню и шапкой */}
+          {/* Основная сетка сайта */}
           <Route element={<AppLayout />}>
-            {/* 🎯 Теперь главный адрес сразу открывает Нейро-Бро (без промежуточного экрана) */}
-            <Route index path="/" element={<NeuroBro />} />
+            {/* 🎯 ГЛАВНАЯ СТРАНИЦА (neuro-master.online/) */}
+            <Route index element={<Home />} />
             
+            {/* 🛠 СЕРВИСЫ */}
             <Route path="/neuro-bro" element={<NeuroBro />} />
             <Route path="/neuro-artist" element={<NeuroArtist />} />
-            
-            {/* 🧒 Аккуратная отдельная страница Детского центра */}
             <Route path="/kids" element={<Kids />} />
             
+            {/* 👤 ПРОФИЛЬ И НАСТРОЙКИ */}
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/settings" element={<SettingsPage />} />
+
+            {/* Вспомогательные страницы */}
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
             <Route path="/form-elements" element={<FormElements />} />
