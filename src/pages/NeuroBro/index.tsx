@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import bridge from "@vkontakte/vk-bridge";
 
 const API_BASE = "/api/bro";
 const BOT_TOKEN = "SuperSecret_987654321_Token";
 
-// 1. ДОБАВЛЕНО: поле imageUrl для отображения картинки в текущем чате
 type Message = {
   role: "user" | "assistant";
   content: string;
@@ -18,23 +18,34 @@ export default function NeuroBro() {
   const [selectedModel, setSelectedModel] = useState("gpt4o_mini");
   const [selectedPersona, setSelectedPersona] = useState("default");
   const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
-  
-  // Состояние для красивого модального окна подтверждения очистки
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
-  // Безопасное определение user_id
+  // 🚀 1. Мгновенная инициализация VK Bridge при запуске в ВК
+  useEffect(() => {
+    bridge.send("VKWebAppInit").catch((err) => {
+      console.log("Запуск вне VK Mini App:", err);
+    });
+  }, []);
+
+  // 🛡 2. Надежная работа с user_id без сброса настоящего аккаунта
   const getUserId = (): number => {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
-    if (idFromUrl) return parseInt(idFromUrl);
-    
-    let storedId = localStorage.getItem("user_id");
-    if (!storedId || storedId === "233876992") {
-      storedId = String(Math.floor(100000000 + Math.random() * 900000000));
-      localStorage.setItem("user_id", storedId);
+
+    if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
+      localStorage.setItem("user_id", idFromUrl);
+      return parseInt(idFromUrl);
     }
-    return parseInt(storedId);
+
+    const storedId = localStorage.getItem("user_id");
+    if (storedId && storedId !== "null" && storedId !== "undefined") {
+      return parseInt(storedId);
+    }
+
+    // Дефолтный ID если ничего нет
+    return 233876992;
   };
 
   const userId = getUserId();
@@ -73,7 +84,6 @@ export default function NeuroBro() {
           headers: { "X-Bot-Token": BOT_TOKEN },
         });
         if (res.data.success && res.data.history) {
-          // История с бэкенда приходит без картинок, и это нормально (экономим место)
           setMessages(res.data.history);
         }
       } catch (e) {
@@ -119,19 +129,18 @@ export default function NeuroBro() {
 
   const handleSendMessage = async () => {
     if (!inputPrompt.trim() && !attachedPreview) return;
-    
+
     const userText = inputPrompt;
     setInputPrompt("");
-    
-    // 2. ДОБАВЛЕНО: сохраняем картинку (base64 превью) в объект сообщения для отображения
+
     setMessages((prev) => [
-      ...prev, 
-      { role: "user", content: userText, imageUrl: attachedPreview || undefined }
+      ...prev,
+      { role: "user", content: userText, imageUrl: attachedPreview || undefined },
     ]);
-    
+
     setIsLoading(true);
     const attachments: string[] = attachedPreview ? [attachedPreview] : [];
-    setAttachedPreview(null); // Очищаем превью после добавления в чат
+    setAttachedPreview(null);
 
     try {
       const res = await axios.post(
@@ -145,7 +154,7 @@ export default function NeuroBro() {
         },
         { headers: { "X-Bot-Token": BOT_TOKEN } }
       );
-      
+
       if (res.data.success && res.data.response) {
         setMessages((prev) => [...prev, { role: "assistant", content: res.data.response }]);
       } else {
@@ -181,7 +190,9 @@ export default function NeuroBro() {
                 {m.name}
               </button>
               <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-30 w-56 p-2.5 bg-gray-900 text-white text-[11px] rounded-xl shadow-xl border border-gray-700 pointer-events-none">
-                <div className="font-bold text-blue-400 mb-0.5">{m.name} ({m.cost})</div>
+                <div className="font-bold text-blue-400 mb-0.5">
+                  {m.name} ({m.cost})
+                </div>
                 <div className="text-gray-300 leading-snug">{m.hint}</div>
               </div>
             </div>
@@ -204,7 +215,13 @@ export default function NeuroBro() {
             title="Очистить память диалога"
             className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
           >
-            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              className="w-5 h-5 stroke-current fill-none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
@@ -225,18 +242,24 @@ export default function NeuroBro() {
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] rounded-2xl p-4 text-sm whitespace-pre-wrap leading-relaxed ${
-                msg.role === "user" 
-                  ? "bg-blue-600 text-white rounded-br-none" 
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none"
-              }`}>
-                {/* 3. ДОБАВЛЕНО: Отображение картинки внутри пузыря сообщения пользователя */}
+            <div
+              key={idx}
+              className={`flex ${
+                msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[80%] rounded-2xl p-4 text-sm whitespace-pre-wrap leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-blue-600 text-white rounded-br-none"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none"
+                }`}
+              >
                 {msg.role === "user" && msg.imageUrl && (
-                  <img 
-                    src={msg.imageUrl} 
-                    alt="Прикрепленное фото" 
-                    className="max-w-full h-auto rounded-lg mb-2 border border-white/20 shadow-sm" 
+                  <img
+                    src={msg.imageUrl}
+                    alt="Прикрепленное фото"
+                    className="max-w-full h-auto rounded-lg mb-2 border border-white/20 shadow-sm"
                   />
                 )}
                 {msg.content}
@@ -258,7 +281,11 @@ export default function NeuroBro() {
       <div className="rounded-2xl border border-gray-200 bg-white p-2.5 dark:border-gray-800 dark:bg-gray-900 space-y-2 shadow-sm">
         {attachedPreview && (
           <div className="flex items-center gap-2 p-1.5 px-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-2 border border-blue-200 dark:border-blue-800">
-            <img src={attachedPreview} alt="Превью" className="w-9 h-9 object-cover rounded-lg" />
+            <img
+              src={attachedPreview}
+              alt="Превью"
+              className="w-9 h-9 object-cover rounded-lg"
+            />
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
               Фото готово к отправке
             </span>
@@ -271,9 +298,23 @@ export default function NeuroBro() {
           </div>
         )}
         <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1.5 px-3 border border-gray-100 dark:border-gray-800">
-          <label className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700" title="Прикрепить фото">
-            <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <label
+            className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700"
+            title="Прикрепить фото"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <svg
+              className="w-5 h-5 stroke-current fill-none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
             </svg>
           </label>
@@ -288,7 +329,7 @@ export default function NeuroBro() {
           <button
             onClick={handleSendMessage}
             disabled={isLoading || (!inputPrompt.trim() && !attachedPreview)}
-            className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0"
+            className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0 cursor-pointer"
             title="Отправить"
           >
             <svg className="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24">
@@ -307,13 +348,21 @@ export default function NeuroBro() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-gray-100 dark:border-gray-800 text-center animate-in fade-in zoom-in duration-150">
             <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mx-auto">
-              <svg className="w-6 h-6 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className="w-6 h-6 stroke-current fill-none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Очистить диалог?</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Очистить диалог?
+              </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Это удалит всю историю переписки и сбросит контекст памяти нейросети.
               </p>
@@ -321,14 +370,14 @@ export default function NeuroBro() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer"
               >
                 Отмена
               </button>
               <button
                 onClick={executeClearHistory}
                 disabled={isClearing}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition shadow-sm"
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition shadow-sm cursor-pointer"
               >
                 {isClearing ? "Очистка..." : "Да, очистить"}
               </button>
