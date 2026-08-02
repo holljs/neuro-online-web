@@ -10,21 +10,23 @@ export default function UserDropdown() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🔍 1. Ищем ID в параметрах URL
+    const savedId = localStorage.getItem("user_id");
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
 
-    if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
+    // 🛡 1. Если пользователь УЖЕ залогинен — держим его настоящий ID!
+    if (savedId && savedId !== "null" && savedId !== "undefined") {
+      setUserId(savedId);
+    } 
+    // 🔍 2. Если ГОСТЬ, но зашёл через VK Mini App (параметр в URL) — запоминаем его
+    else if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
       localStorage.setItem("user_id", idFromUrl);
+      localStorage.setItem("vk_user_id", idFromUrl);
       setUserId(idFromUrl);
-    } else {
-      // 🔍 2. Читаем сохраненный ID из памяти
-      const savedId = localStorage.getItem("user_id");
-      if (savedId && savedId !== "null" && savedId !== "undefined") {
-        setUserId(savedId);
-      } else {
-        setUserId(null);
-      }
+    } 
+    // 👤 3. В остальных случаях — строго ГОСТЬ
+    else {
+      setUserId(null);
     }
   }, []);
 
@@ -42,10 +44,8 @@ export default function UserDropdown() {
     closeDropdown();
 
     if (userId) {
-      // Если залогинен — переходим в кабинет
       navigate("/profile");
     } else {
-      // Если ГОСТЬ — открываем модалку входа VK ID
       setIsAuthModalOpen(true);
     }
   };
@@ -127,7 +127,7 @@ export default function UserDropdown() {
           </div>
 
           <ul className="flex flex-col gap-1 pb-1">
-            {/* 1. Личный кабинет (Умный клик) */}
+            {/* 1. Личный кабинет */}
             <li>
               <button
                 onClick={handleProfileClick}
@@ -226,7 +226,6 @@ export default function UserDropdown() {
         </Dropdown>
       </div>
 
-      {/* Единственное окно авторизации */}
       <VkAuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
