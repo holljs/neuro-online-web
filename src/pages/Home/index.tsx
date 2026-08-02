@@ -8,7 +8,7 @@ export default function Home() {
       {/* Заголовок */}
       <div className="text-center sm:text-left">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-          Сервисы Нейро-Онлайн
+          Сервисы Нейро-Мастер
         </h1>
         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
           Выберите нужный инструмент для работы
