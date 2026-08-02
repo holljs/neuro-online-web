@@ -13,7 +13,7 @@ export default function UserDropdown() {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
 
-    if (idFromUrl) {
+    if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
       localStorage.setItem("user_id", idFromUrl);
       setUserId(idFromUrl);
     } else {
@@ -21,6 +21,9 @@ export default function UserDropdown() {
       const savedId = localStorage.getItem("user_id");
       if (savedId && savedId !== "null" && savedId !== "undefined") {
         setUserId(savedId);
+      } else {
+        // 🔥 Если ничего нет — строго ГОСТЬ
+        setUserId(null);
       }
     }
   }, []);
@@ -33,11 +36,20 @@ export default function UserDropdown() {
     setIsOpen(false);
   }
 
+  // 🚪 Настоящий чистый выход без фантомных ID
   const handleLogout = () => {
     localStorage.removeItem("user_id");
+    localStorage.removeItem("vk_user_id");
+    
+    // Очищаем URL от параметров ?user_id=...
+    const url = new URL(window.location.href);
+    url.searchParams.delete("user_id");
+    url.searchParams.delete("vk_user_id");
+    window.history.replaceState({}, document.title, url.pathname);
+
     setUserId(null);
     closeDropdown();
-    window.location.href = "/";
+    window.location.reload();
   };
 
   return (
@@ -128,7 +140,7 @@ export default function UserDropdown() {
               </Link>
             </li>
 
-            {/* 2. Настройки (🔥 Перенаправление ведет на /settings) */}
+            {/* 2. Настройки */}
             <li>
               <Link
                 to="/settings"
