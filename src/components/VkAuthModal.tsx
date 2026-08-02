@@ -12,10 +12,9 @@ export default function VkAuthModal({ isOpen, onClose, onSuccess }: VkAuthModalP
   useEffect(() => {
     if (!isOpen || !containerRef.current) return;
 
-    // Очищаем контейнер перед монтированием кнопки
+    // Очищаем контейнер
     containerRef.current.innerHTML = "";
 
-    // 1. Динамически загружаем VK ID SDK 3.0
     const script = document.createElement("script");
     script.src = "https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js";
     script.async = true;
@@ -24,7 +23,6 @@ export default function VkAuthModal({ isOpen, onClose, onSuccess }: VkAuthModalP
       if ("VKIDSDK" in window) {
         const VKID = (window as any).VKIDSDK;
 
-        // Инициализация приложения
         VKID.Config.init({
           app: 54703877,
           redirectUrl: "https://neuro-master.online/",
@@ -35,12 +33,12 @@ export default function VkAuthModal({ isOpen, onClose, onSuccess }: VkAuthModalP
 
         const oneTap = new VKID.OneTap();
 
-        // Рендерим фирменную кнопку VK ID в контейнер
         if (containerRef.current) {
           oneTap
             .render({
               container: containerRef.current,
               showAlternativeLogin: true,
+              oauthList: ["ok_ru", "mail_ru"], // 🎯 Подключаем ОК и Mail.ru
             })
             .on(VKID.WidgetEvents.ERROR, (error: any) => {
               console.error("VK ID Auth Error:", error);
@@ -49,12 +47,10 @@ export default function VkAuthModal({ isOpen, onClose, onSuccess }: VkAuthModalP
               const code = payload.code;
               const deviceId = payload.device_id;
 
-              // Обмен кода на данные пользователя
               VKID.Auth.exchangeCode(code, deviceId)
                 .then((data: any) => {
                   console.log("Успешный вход VK ID:", data);
-                  
-                  // Получаем user_id из полученных данных
+
                   const userId = data?.user_id || data?.user?.id || payload?.user_id;
 
                   if (userId) {
@@ -64,12 +60,12 @@ export default function VkAuthModal({ isOpen, onClose, onSuccess }: VkAuthModalP
                     if (onSuccess) {
                       onSuccess(String(userId), data?.access_token);
                     }
-                    
+
                     window.location.reload();
                   }
                 })
                 .catch((err: any) => {
-                  console.error("Ошибка обмена кода VK ID:", err);
+                  console.error("Ошибка авторизации:", err);
                 });
             });
         }
@@ -79,7 +75,6 @@ export default function VkAuthModal({ isOpen, onClose, onSuccess }: VkAuthModalP
     document.head.appendChild(script);
 
     return () => {
-      // Подчищаем скрипт при закрытии окна
       if (document.head.contains(script)) {
         document.head.removeChild(script);
       }
@@ -92,15 +87,15 @@ export default function VkAuthModal({ isOpen, onClose, onSuccess }: VkAuthModalP
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-gray-800 text-center space-y-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          Авторизация ВКонтакте
+          Быстрый вход
         </h3>
 
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Войдите через VK ID для сохранения баланса кредитов и истории генераций.
+          Выберите удобный способ входа для сохранения баланса и истории генераций
         </p>
 
-        {/* Контейнер, куда VK ID SDK автоматически вставит кнопку */}
-        <div ref={containerRef} className="flex justify-center my-4 min-h-[44px]"></div>
+        {/* Сюда рендерится виджет (VK ID + ОК + Mail.ru) */}
+        <div ref={containerRef} className="flex justify-center my-4 min-h-[48px]"></div>
 
         <button
           type="button"
