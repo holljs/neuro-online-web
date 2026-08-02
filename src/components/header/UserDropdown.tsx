@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import VkAuthModal from "../VkAuthModal";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // 🔍 1. Ищем ID в параметрах URL
@@ -17,12 +18,11 @@ export default function UserDropdown() {
       localStorage.setItem("user_id", idFromUrl);
       setUserId(idFromUrl);
     } else {
-      // 🔍 2. Читаем сохраненный ID из памяти браузера
+      // 🔍 2. Читаем сохраненный ID из памяти
       const savedId = localStorage.getItem("user_id");
       if (savedId && savedId !== "null" && savedId !== "undefined") {
         setUserId(savedId);
       } else {
-        // 🔥 Если ничего нет — строго ГОСТЬ
         setUserId(null);
       }
     }
@@ -36,12 +36,25 @@ export default function UserDropdown() {
     setIsOpen(false);
   }
 
-  // 🚪 Настоящий чистый выход без фантомных ID
+  // 🎯 Умный переход в личный кабинет
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    closeDropdown();
+
+    if (userId) {
+      // Если залогинен — переходим в кабинет
+      navigate("/profile");
+    } else {
+      // Если ГОСТЬ — открываем модалку входа VK ID
+      setIsAuthModalOpen(true);
+    }
+  };
+
+  // 🚪 Чистый выход из аккаунта
   const handleLogout = () => {
     localStorage.removeItem("user_id");
     localStorage.removeItem("vk_user_id");
     
-    // Очищаем URL от параметров ?user_id=...
     const url = new URL(window.location.href);
     url.searchParams.delete("user_id");
     url.searchParams.delete("vk_user_id");
@@ -100,7 +113,6 @@ export default function UserDropdown() {
               {userId ? "VK ID Авторизован" : "Войдите для доступа к балансу"}
             </span>
 
-            {/* Кнопка быстрого входа для гостей */}
             {!userId && (
               <button
                 onClick={() => {
@@ -115,12 +127,11 @@ export default function UserDropdown() {
           </div>
 
           <ul className="flex flex-col gap-1 pb-1">
-            {/* 1. Личный кабинет */}
+            {/* 1. Личный кабинет (Умный клик) */}
             <li>
-              <Link
-                to="/profile"
-                onClick={closeDropdown}
-                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 cursor-pointer"
+              <button
+                onClick={handleProfileClick}
+                className="w-full flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 cursor-pointer text-left"
               >
                 <svg
                   className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300"
@@ -128,7 +139,6 @@ export default function UserDropdown() {
                   height="24"
                   viewBox="0 0 24 24"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     fillRule="evenodd"
@@ -137,7 +147,7 @@ export default function UserDropdown() {
                   />
                 </svg>
                 Личный кабинет
-              </Link>
+              </button>
             </li>
 
             {/* 2. Настройки */}
@@ -145,7 +155,7 @@ export default function UserDropdown() {
               <Link
                 to="/settings"
                 onClick={closeDropdown}
-                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 cursor-pointer"
               >
                 <svg
                   className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300"
@@ -153,7 +163,6 @@ export default function UserDropdown() {
                   height="24"
                   viewBox="0 0 24 24"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     fillRule="evenodd"
@@ -172,7 +181,7 @@ export default function UserDropdown() {
                 target="_blank"
                 rel="noreferrer"
                 onClick={closeDropdown}
-                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 cursor-pointer"
               >
                 <svg
                   className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300"
@@ -180,7 +189,6 @@ export default function UserDropdown() {
                   height="24"
                   viewBox="0 0 24 24"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     fillRule="evenodd"
@@ -205,7 +213,6 @@ export default function UserDropdown() {
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   fillRule="evenodd"
@@ -219,7 +226,7 @@ export default function UserDropdown() {
         </Dropdown>
       </div>
 
-      {/* Модальное окно авторизации ВКонтакте */}
+      {/* Единственное окно авторизации */}
       <VkAuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
