@@ -13,7 +13,7 @@ export default function Kids() {
       price: "180 ₽ навсегда",
       freeTrial: "24 часа бесплатно",
       vkAppId: "54603838",
-      // Мягкие фисташково-шалфейные софт-тона
+      route: "/kids/malysh",
       badgeStyle: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
       accentColor: "group-hover:text-emerald-500",
       borderHover: "hover:border-emerald-500/30",
@@ -27,7 +27,7 @@ export default function Kids() {
       price: "150 ₽/мес",
       freeTrial: "24 часа бесплатно",
       vkAppId: "54612283",
-      // Приглушённо-янтарные тона
+      route: "/kids/genius",
       badgeStyle: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
       accentColor: "group-hover:text-amber-500",
       borderHover: "hover:border-amber-500/30",
@@ -41,25 +41,13 @@ export default function Kids() {
       price: "От 150 ₽",
       freeTrial: "6 кредитов в подарок",
       vkAppId: "54451631",
-      // Нежно-лавандовые софт-тона
+      route: "/kids/tutor",
       badgeStyle: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
       accentColor: "group-hover:text-indigo-500",
       borderHover: "hover:border-indigo-500/30",
       btnStyle: "bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20",
     },
   ];
-
-  const openVkApp = (vkAppId: string) => {
-    if ((window as any).vkBridge) {
-      (window as any).vkBridge
-        .send("VKWebAppOpenApp", { app_id: vkAppId })
-        .catch(() => {
-          window.open(`https://vk.com/app${vkAppId}`, "_blank");
-        });
-    } else {
-      window.open(`https://vk.com/app${vkAppId}`, "_blank");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -106,7 +94,7 @@ export default function Kids() {
           </p>
         </div>
 
-        {/* Сетка карточек в софт-тонах */}
+        {/* Сетка карточек */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {kidsApps.map((app) => (
             <div
@@ -136,7 +124,7 @@ export default function Kids() {
                 </p>
               </div>
 
-              {/* Детали подписки и нежная софт-кнопка */}
+              {/* Детали подписки и кнопка перехода */}
               <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800/80">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-400">Тариф:</span>
@@ -153,12 +141,12 @@ export default function Kids() {
                   </span>
                 </div>
 
-                {/* Пастельная софт-кнопка */}
+                {/* Кнопка открывает встроенный раздел сайта */}
                 <button
-                  onClick={() => openVkApp(app.vkAppId)}
+                  onClick={() => navigate(app.route)}
                   className={`w-full mt-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow ${app.btnStyle}`}
                 >
-                  <span>Открыть сервис</span>
+                  <span>Перейти к занятиям</span>
                   <svg
                     className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"
                     fill="none"
@@ -176,22 +164,6 @@ export default function Kids() {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Информационная плашка */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm">
-          <div className="max-w-2xl space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              Бесплатный доступ
-            </span>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Как протестировать все возможности?
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-              Подпишитесь на нашу официальную группу ВКонтакте и напишите в сообщения слово{" "}
-              <span className="font-semibold text-gray-900 dark:text-white">«Привет»</span> — бот автоматически зачислит 24 часа полного VIP-доступа ко всем образовательным тренажёрам.
-            </p>
-          </div>
         </div>
 
         {/* Назначение и аудитория */}
