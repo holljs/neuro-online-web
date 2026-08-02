@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import bridge from "@vkontakte/vk-bridge";
 
 const loaderStyles = `
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
@@ -36,17 +37,29 @@ export default function NeuroArtist() {
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
+  // 🚀 1. Мгновенная инициализация VK Bridge при запуске в ВК
+  useEffect(() => {
+    bridge.send("VKWebAppInit").catch((err) => {
+      console.log("Запуск вне VK Mini App:", err);
+    });
+  }, []);
+
+  // 🛡 2. Надежный метод getUserId (одинаковый для всего проекта)
   const getUserId = (): number | null => {
+    const savedId = localStorage.getItem("user_id");
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
-    if (idFromUrl) {
+
+    // Если залогинен — держим ID
+    if (savedId && savedId !== "null" && savedId !== "undefined") {
+      return parseInt(savedId);
+    } 
+    // Если гость из Mini App — запоминаем
+    else if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
       localStorage.setItem("user_id", idFromUrl);
+      localStorage.setItem("vk_user_id", idFromUrl);
       return parseInt(idFromUrl);
-    }
-    const storedId = localStorage.getItem("user_id");
-    if (storedId && storedId !== "null" && storedId !== "undefined") {
-      return parseInt(storedId);
-    }
+    } 
     return null;
   };
 
@@ -168,7 +181,6 @@ export default function NeuroArtist() {
     return uploadedUrls;
   };
 
-  // ⏳ Увеличено время ожидания до 100 попыток (до 5 минут)
   const checkStatus = async (
     taskId: string,
     modeObjName: string,
@@ -283,14 +295,14 @@ export default function NeuroArtist() {
           <p className="text-sm text-gray-500 mb-6">Выберите категорию, режим и настройте параметры запроса.</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
             {[{ id: "photo", label: "Фото и Арт" }, { id: "video", label: "Видео" }, { id: "audio", label: "Музыка и Звук" }, { id: "business", label: "Для Бизнеса" }].map((cat) => (
-              <button key={cat.id} onClick={() => { setActiveCategory(cat.id as CategoryType); setActiveMode(modesByCategory[cat.id as CategoryType][0].id); }} className={`py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition ${activeCategory === cat.id ? "bg-blue-600 text-white shadow-md" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"}`}>
+              <button key={cat.id} onClick={() => { setActiveCategory(cat.id as CategoryType); setActiveMode(modesByCategory[cat.id as CategoryType][0].id); }} className={`py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition ${activeCategory === cat.id ? "bg-blue-600 text-white shadow-md" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"} cursor-pointer`}>
                 {cat.label}
               </button>
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
             {currentModes.map((mode) => (
-              <button key={mode.id} onClick={() => setActiveMode(mode.id)} className={`p-4 rounded-xl border text-left transition ${activeMode === mode.id ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20" : "border-gray-200 dark:border-gray-800 hover:border-gray-300"}`}>
+              <button key={mode.id} onClick={() => setActiveMode(mode.id)} className={`p-4 rounded-xl border text-left transition ${activeMode === mode.id ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20" : "border-gray-200 dark:border-gray-800 hover:border-gray-300"} cursor-pointer`}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-bold text-sm text-gray-900 dark:text-white">{mode.name}</span>
                   <span className="text-xs px-2 py-0.5 rounded font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{mode.cost}</span>
@@ -357,7 +369,7 @@ export default function NeuroArtist() {
           <button onClick={handleGenerate} disabled={isGenerating} className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 shadow-md cursor-pointer flex items-center justify-center gap-2.5">
             {isGenerating ? (
               <>
-                <svg className="spin-mini h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <svg className="spin-mini h-5 w-5 text-white" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 <span>Магия в процессе...</span>
               </>
             ) : (
@@ -371,7 +383,7 @@ export default function NeuroArtist() {
             {isGenerating && (
               <div className="absolute inset-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 animate-pulse-slow">
                 <div className="w-full max-w-sm h-48 sm:h-64 rounded-2xl animate-shimmer mb-4 sm:mb-6 border border-gray-100 dark:border-gray-800 flex items-center justify-center px-4">
-                  <svg className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 spin-mini" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <svg className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 spin-mini" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </div>
                 <h3 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white mb-1 sm:mb-2">Нейросеть творит магию</h3>
                 <p className="text-xs sm:text-sm text-gray-500 max-w-xs sm:max-w-sm leading-normal">Это может занять от пары секунд до 3 минут. Пожалуйста, не закрывайте страницу.</p>
@@ -392,7 +404,7 @@ export default function NeuroArtist() {
                   )}
                 </div>
                 <div className="mt-5 relative z-0">
-                  <a href={currentResultUrl} target="_blank" rel="noreferrer" download className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-sm">
+                  <a href={currentResultUrl} target="_blank" rel="noreferrer" download className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-sm cursor-pointer">
                     <span>Скачать файл</span>
                   </a>
                 </div>
@@ -406,7 +418,7 @@ export default function NeuroArtist() {
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white">Последний результат</h3>
-            <a href="/history" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition">
+            <a href="/history" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition cursor-pointer">
               <span>Вся история</span><span>→</span>
             </a>
           </div>
@@ -451,7 +463,7 @@ export default function NeuroArtist() {
                         <img src={item.resultUrl} alt="Результат" onClick={() => setModalMedia(item.resultUrl!)} className="w-full h-56 object-cover rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer shadow-sm hover:opacity-95 transition" />
                       )}
                       <div className="pt-1">
-                        <a href={item.resultUrl} target="_blank" rel="noreferrer" download className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                        <a href={item.resultUrl} target="_blank" rel="noreferrer" download className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                           <span>Скачать результат</span>
                         </a>
