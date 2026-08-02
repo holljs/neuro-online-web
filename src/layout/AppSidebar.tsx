@@ -273,7 +273,7 @@ const AppSidebar: React.FC = () => {
         <Link to="/">
           {isExpanded || isHovered || isMobileOpen ? (
             <span className="text-2xl font-black tracking-wide text-brand-500 dark:text-white px-2">
-              Нейро-Онлайн
+              Нейро-Мастер
             </span>
           ) : (
             <span className="text-2xl font-black text-brand-500 dark:text-white">
