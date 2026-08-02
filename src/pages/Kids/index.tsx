@@ -49,6 +49,21 @@ export default function Kids() {
     },
   ];
 
+  const handleOpenApp = (vkAppId: string, route: string) => {
+    // 1. Если запущены внутри VK Mini App
+    if ((window as any).vkBridge) {
+      (window as any).vkBridge
+        .send("VKWebAppOpenApp", { app_id: parseInt(vkAppId) })
+        .catch(() => {
+          window.open(`https://vk.com/app${vkAppId}`, "_blank");
+        });
+      return;
+    }
+
+    // 2. Открываем веб-версию приложения VK в новой вкладке (без ошибки 404 роутера)
+    window.open(`https://vk.com/app${vkAppId}`, "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       {/* Шапка */}
@@ -141,12 +156,12 @@ export default function Kids() {
                   </span>
                 </div>
 
-                {/* Кнопка открывает встроенный раздел сайта */}
+                {/* Кнопка запуска без ошибок роутинга */}
                 <button
-                  onClick={() => navigate(app.route)}
+                  onClick={() => handleOpenApp(app.vkAppId, app.route)}
                   className={`w-full mt-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow ${app.btnStyle}`}
                 >
-                  <span>Перейти к занятиям</span>
+                  <span>Открыть сервис</span>
                   <svg
                     className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"
                     fill="none"
