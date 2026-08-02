@@ -10,7 +10,7 @@ export default function VkAuthModal({ isOpen, onClose }: VkAuthModalProps) {
 
   const handleVkAuth = () => {
     // ID приложения VK (для веб-авторизации используем ID твоего основного сервиса)
-    const clientId = "54477651"; // Идентификатор твоего приложения VK
+    const clientId = "54703877"; // Идентификатор твоего приложения VK
     const redirectUri = encodeURIComponent("https://neuro-master.online/");
 
     // Прямой редирект на VK ID OAuth
