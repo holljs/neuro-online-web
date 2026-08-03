@@ -21,6 +21,8 @@ export default function NeuroBro() {
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const [userId, setUserId] = useState<number>(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -101,6 +103,37 @@ export default function NeuroBro() {
     fetchHistory();
   }, [userId]);
 
+  // 🎙 Голосовой ввод (Web Speech API)
+  const handleVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Ваш браузер не поддерживает голосовой ввод.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ru-RU";
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInputPrompt((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+
+    recognition.start();
+  };
+
+  // 📋 Копирование текста в стиле Telegram
+  const handleCopyText = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -110,9 +143,6 @@ export default function NeuroBro() {
       if (typeof reader.result === "string") {
         setAttachedPreview(reader.result);
       }
-    };
-    reader.onerror = () => {
-      alert("Не удалось прочитать файл изображения.");
     };
   };
 
@@ -171,11 +201,7 @@ export default function NeuroBro() {
       }
     } catch (e: any) {
       const errDetail = e.response?.data?.detail;
-      if (Array.isArray(errDetail)) {
-        alert("Ошибка формата данных: " + JSON.stringify(errDetail));
-      } else {
-        alert(errDetail || "Ошибка связи с сервером");
-      }
+      alert(errDetail || "Ошибка связи с сервером");
     } finally {
       setIsLoading(false);
     }
@@ -183,10 +209,8 @@ export default function NeuroBro() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)] gap-2 sm:gap-3 relative">
-      {/* 📱 Компактная верхняя панель (Адаптирована под мобилки) */}
+      {/* Верхняя панель */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2 sm:p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-col gap-2 shadow-sm">
-        
-        {/* Ряд 1: Кнопки моделей с горизонтальным скроллом */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800 p-1 rounded-xl overflow-x-auto no-scrollbar w-full sm:w-auto">
             {models.map((m) => (
@@ -205,7 +229,6 @@ export default function NeuroBro() {
           </div>
         </div>
 
-        {/* Ряд 2: Выбор Роли + Кнопка Очистки */}
         <div className="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-800/60 pt-1.5">
           <select
             value={selectedPersona}
@@ -221,16 +244,10 @@ export default function NeuroBro() {
 
           <button
             onClick={() => setShowConfirmModal(true)}
-            title="Очистить память диалога"
+            title="Очистить диалог"
             className="p-1.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition shrink-0 cursor-pointer"
           >
-            <svg
-              className="w-4 h-4 sm:w-5 sm:h-5 stroke-current fill-none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
@@ -238,7 +255,7 @@ export default function NeuroBro() {
         </div>
       </div>
 
-      {/* Чат */}
+      {/* Сообщения чата */}
       <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto space-y-3 sm:space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 text-xs sm:text-sm">
@@ -253,25 +270,47 @@ export default function NeuroBro() {
           messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-3 sm:p-4 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-br-none"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none"
-                }`}
-              >
-                {msg.role === "user" && msg.imageUrl && (
-                  <img
-                    src={msg.imageUrl}
-                    alt="Прикрепленное фото"
-                    className="max-w-full h-auto rounded-lg mb-2 border border-white/20 shadow-sm"
-                  />
-                )}
-                {msg.content}
+              <div className="relative group max-w-[88%] sm:max-w-[80%]">
+                <div
+                  className={`rounded-2xl p-3 sm:p-4 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed pr-8 ${
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white rounded-br-none"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none"
+                  }`}
+                >
+                  {msg.role === "user" && msg.imageUrl && (
+                    <img
+                      src={msg.imageUrl}
+                      alt="Прикрепленное фото"
+                      className="max-w-full h-auto rounded-lg mb-2 border border-white/20 shadow-sm"
+                    />
+                  )}
+                  {msg.content}
+                </div>
+
+                {/* 📋 Кнопка копирования сообщения (Telegram style) */}
+                <button
+                  onClick={() => handleCopyText(msg.content, idx)}
+                  className={`absolute top-2 right-2 p-1 rounded transition opacity-0 group-hover:opacity-100 cursor-pointer ${
+                    msg.role === "user"
+                      ? "text-white/80 hover:text-white hover:bg-white/10"
+                      : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5"
+                  }`}
+                  title="Копировать"
+                >
+                  {copiedIdx === idx ? (
+                    <svg className="w-3.5 h-3.5 stroke-emerald-400 fill-none" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
           ))
@@ -286,55 +325,55 @@ export default function NeuroBro() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Панель ввода */}
+      {/* Панель ввода с кнопкой фото, микрофоном и кнопкой отправки */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900 space-y-1.5 shadow-sm">
         {attachedPreview && (
           <div className="flex items-center gap-2 p-1 px-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-1 border border-blue-200 dark:border-blue-800">
-            <img
-              src={attachedPreview}
-              alt="Превью"
-              className="w-7 h-7 object-cover rounded-lg"
-            />
-            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
-              Фото готово
-            </span>
-            <button
-              onClick={() => setAttachedPreview(null)}
-              className="text-gray-400 hover:text-red-500 text-xs font-bold ml-1 cursor-pointer"
-            >
-              ✕
-            </button>
+            <img src={attachedPreview} alt="Превью" className="w-7 h-7 object-cover rounded-lg" />
+            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">Фото готово</span>
+            <button onClick={() => setAttachedPreview(null)} className="text-gray-400 hover:text-red-500 text-xs font-bold ml-1 cursor-pointer">✕</button>
           </div>
         )}
+
         <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1 px-2.5 border border-gray-100 dark:border-gray-800">
-          <label
-            className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition hover:bg-gray-200 dark:hover:bg-gray-700 shrink-0"
-            title="Прикрепить фото"
-          >
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <svg
-              className="w-5 h-5 stroke-current fill-none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+          {/* Скрепка (фото) */}
+          <label className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition shrink-0" title="Прикрепить фото">
+            <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
             </svg>
           </label>
+
+          {/* 🎙 Микрофон (Голосовой ввод) */}
+          <button
+            type="button"
+            onClick={handleVoiceInput}
+            className={`p-1.5 rounded-full transition shrink-0 cursor-pointer ${
+              isListening
+                ? "text-red-500 animate-pulse bg-red-100 dark:bg-red-900/30"
+                : "text-gray-400 hover:text-blue-600"
+            }`}
+            title="Голосовой ввод"
+          >
+            <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+          </button>
+
+          {/* Текстовое поле */}
           <input
             type="text"
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder="Спроси меня о чем угодно..."
+            placeholder={isListening ? "Говорите..." : "Спроси меня о чем угодно..."}
             className="flex-1 bg-transparent text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none px-1"
           />
+
+          {/* Отправить */}
           <button
             onClick={handleSendMessage}
             disabled={isLoading || (!inputPrompt.trim() && !attachedPreview)}
@@ -346,50 +385,25 @@ export default function NeuroBro() {
             </svg>
           </button>
         </div>
-        <div className="text-[10px] sm:text-[11px] text-gray-400 font-medium px-2 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block shrink-0"></span>
-          <span className="truncate">{models.find((m) => m.id === selectedModel)?.hint}</span>
-        </div>
       </div>
 
-      {/* Модалка очистки */}
+      {/* Модальное окно подтверждения очистки */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-xs sm:max-w-sm w-full p-5 space-y-3 shadow-2xl border border-gray-100 dark:border-gray-800 text-center">
             <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mx-auto">
-              <svg
-                className="w-5 h-5 stroke-current fill-none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                Очистить диалог?
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Это удалит историю и сбросит контекст памяти.
-              </p>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">Очистить диалог?</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Это удалит историю и сбросит контекст памяти.</p>
             </div>
             <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="flex-1 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs hover:bg-gray-50 transition cursor-pointer"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={executeClearHistory}
-                disabled={isClearing}
-                className="flex-1 py-2 rounded-xl bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition shadow-sm cursor-pointer"
-              >
-                {isClearing ? "Очистка..." : "Очистить"}
-              </button>
+              <button onClick={() => setShowConfirmModal(false)} className="flex-1 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs">Отмена</button>
+              <button onClick={executeClearHistory} disabled={isClearing} className="flex-1 py-2 rounded-xl bg-red-500 text-white font-semibold text-xs">{isClearing ? "Очистка..." : "Очистить"}</button>
             </div>
           </div>
         </div>
