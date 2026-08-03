@@ -61,7 +61,7 @@ const othersItems: NavItem[] = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar, toggleSidebar } = useSidebar();
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -72,6 +72,15 @@ const AppSidebar: React.FC = () => {
     {}
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // 🚀 Автоматическое закрытие мобильной шторки при клике на ссылку
+  const handleLinkClick = () => {
+    if (isMobileOpen && toggleMobileSidebar) {
+      toggleMobileSidebar();
+    } else if (toggleSidebar && (window.innerWidth < 1024)) {
+      toggleSidebar();
+    }
+  };
 
   const isActive = useCallback(
     (path: string) => location.pathname === path,
@@ -171,6 +180,7 @@ const AppSidebar: React.FC = () => {
             nav.path && (
               <Link
                 to={nav.path}
+                onClick={handleLinkClick}
                 className={`menu-item group ${
                   isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
                 }`}
@@ -208,6 +218,7 @@ const AppSidebar: React.FC = () => {
                   <li key={subItem.name}>
                     <Link
                       to={subItem.path}
+                      onClick={handleLinkClick}
                       className={`menu-dropdown-item ${
                         isActive(subItem.path)
                           ? "menu-dropdown-item-active"
@@ -270,7 +281,7 @@ const AppSidebar: React.FC = () => {
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link to="/">
+        <Link to="/" onClick={handleLinkClick}>
           {isExpanded || isHovered || isMobileOpen ? (
             <span className="text-2xl font-black tracking-wide text-brand-500 dark:text-white px-2">
               Нейро-Мастер
