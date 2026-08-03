@@ -24,6 +24,9 @@ export default function NeuroBro() {
   const [isListening, setIsListening] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
+  // Ref для блока чата (чтобы прокручивать строго внутри окна)
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   const [userId, setUserId] = useState<number>(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
@@ -58,8 +61,6 @@ export default function NeuroBro() {
     }
   }, []);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const models = [
     { id: "gpt4o_mini", name: "Быстрая", cost: "3 ⚡", hint: "Только текст. Не видит фото (3⚡)" },
     { id: "gemini_flash", name: "Думающая", cost: "10 ⚡", hint: "Распознаёт фото и файлы (10⚡)" },
@@ -78,8 +79,14 @@ export default function NeuroBro() {
     { id: "strategist", name: "Бизнес-Стратег" },
   ];
 
+  // Точечная прокрутка внутри блока чата (не дергает страницу)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   };
 
   useEffect(() => {
@@ -103,7 +110,7 @@ export default function NeuroBro() {
     fetchHistory();
   }, [userId]);
 
-  // 🎙 Голосовой ввод (Web Speech API)
+  // Голосовой ввод
   const handleVoiceInput = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -127,7 +134,7 @@ export default function NeuroBro() {
     recognition.start();
   };
 
-  // 📋 Копирование текста в стиле Telegram
+  // Копирование текста
   const handleCopyText = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
@@ -255,8 +262,11 @@ export default function NeuroBro() {
         </div>
       </div>
 
-      {/* Сообщения чата */}
-      <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto space-y-3 sm:space-y-4">
+      {/* Окно сообщений с локальным ref-скроллом */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto space-y-3 sm:space-y-4"
+      >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 text-xs sm:text-sm">
             <p className="font-bold text-gray-700 dark:text-gray-200 text-sm sm:text-base mb-1">
@@ -290,7 +300,6 @@ export default function NeuroBro() {
                   {msg.content}
                 </div>
 
-                {/* 📋 Кнопка копирования сообщения (Telegram style) */}
                 <button
                   onClick={() => handleCopyText(msg.content, idx)}
                   className={`absolute top-2 right-2 p-1 rounded transition opacity-0 group-hover:opacity-100 cursor-pointer ${
@@ -322,10 +331,9 @@ export default function NeuroBro() {
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
-      {/* Панель ввода с кнопкой фото, микрофоном и кнопкой отправки */}
+      {/* Панель ввода */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900 space-y-1.5 shadow-sm">
         {attachedPreview && (
           <div className="flex items-center gap-2 p-1 px-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-1 border border-blue-200 dark:border-blue-800">
@@ -336,7 +344,6 @@ export default function NeuroBro() {
         )}
 
         <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1 px-2.5 border border-gray-100 dark:border-gray-800">
-          {/* Скрепка (фото) */}
           <label className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition shrink-0" title="Прикрепить фото">
             <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
             <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -344,7 +351,6 @@ export default function NeuroBro() {
             </svg>
           </label>
 
-          {/* 🎙 Микрофон (Голосовой ввод) */}
           <button
             type="button"
             onClick={handleVoiceInput}
@@ -363,7 +369,6 @@ export default function NeuroBro() {
             </svg>
           </button>
 
-          {/* Текстовое поле */}
           <input
             type="text"
             value={inputPrompt}
@@ -373,7 +378,6 @@ export default function NeuroBro() {
             className="flex-1 bg-transparent text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none px-1"
           />
 
-          {/* Отправить */}
           <button
             onClick={handleSendMessage}
             disabled={isLoading || (!inputPrompt.trim() && !attachedPreview)}
