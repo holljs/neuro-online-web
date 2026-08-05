@@ -51,14 +51,14 @@ export default function NeuroArtist() {
     const idFromUrl = urlParams.get("user_id") || urlParams.get("vk_user_id");
 
     // Если залогинен — держим ID
-    if (savedId && savedId !== "null" && savedId !== "undefined") {
-      return parseInt(savedId);
+    if (savedId && savedId !== "null" && savedId !== "undefined" && savedId.trim() !== "") {
+      return parseInt(savedId, 10);
     } 
     // Если гость из Mini App — запоминаем
-    else if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined") {
+    else if (idFromUrl && idFromUrl !== "null" && idFromUrl !== "undefined" && idFromUrl.trim() !== "") {
       localStorage.setItem("user_id", idFromUrl);
       localStorage.setItem("vk_user_id", idFromUrl);
-      return parseInt(idFromUrl);
+      return parseInt(idFromUrl, 10);
     } 
     return null;
   };
@@ -110,11 +110,12 @@ export default function NeuroArtist() {
     }
   }, [history]);
 
+  // 📝 3. ИЗМЕНЕНА ЦЕНА У МЕГА-МИКСА (seadream_mix)
   const modesByCategory = {
     photo: [
       { id: "t2i", name: "Нейро-Художник", cost: "1 кр.", desc: "Генерация артов по тексту" },
       { id: "vip_mix", name: "VIP-Микс", cost: "3 кр.", desc: "Точное сохранение лиц и внешности" },
-      { id: "seadream_mix", name: "Мега-Микс", cost: "3 кр.", desc: "Постеры, баннеры и рекламный дизайн" },
+      { id: "seadream_mix", name: "Мега-Микс", cost: "3 кр.", desc: "Постеры, баннеры и рекламный дизайн" }, // 🔥 ТУТ
       { id: "ultra_photo", name: "Ультра-Фото", cost: "5 кр.", desc: "Премиум-реализм и русский текст" },
       { id: "gfpgan", name: "Реставратор", cost: "3 кр.", desc: "Повышение четкости и удаление шума" },
     ],
@@ -138,6 +139,13 @@ export default function NeuroArtist() {
   const currentModes = modesByCategory[activeCategory];
   const [rawFiles, setRawFiles] = useState<File[]>([]);
 
+  // Очистка памяти для URL объектов
+  useEffect(() => {
+    return () => {
+      selectedImages.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [selectedImages]);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
@@ -148,6 +156,7 @@ export default function NeuroArtist() {
   };
 
   const handleRemoveImage = (index: number) => {
+    URL.revokeObjectURL(selectedImages[index]);
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
     setRawFiles((prev) => prev.filter((_, i) => i !== index));
   };
@@ -205,6 +214,7 @@ export default function NeuroArtist() {
         setCurrentResultUrl(finalUrl);
         setIsGenerating(false);
         setPrompt("");
+        selectedImages.forEach((url) => URL.revokeObjectURL(url));
         setSelectedImages([]);
         setRawFiles([]);
         const newItem: HistoryItem = {
@@ -369,7 +379,7 @@ export default function NeuroArtist() {
           <button onClick={handleGenerate} disabled={isGenerating} className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition disabled:opacity-50 shadow-md cursor-pointer flex items-center justify-center gap-2.5">
             {isGenerating ? (
               <>
-                <svg className="spin-mini h-5 w-5 text-white" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <svg className="spin-mini h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 <span>Магия в процессе...</span>
               </>
             ) : (
@@ -383,7 +393,7 @@ export default function NeuroArtist() {
             {isGenerating && (
               <div className="absolute inset-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 animate-pulse-slow">
                 <div className="w-full max-w-sm h-48 sm:h-64 rounded-2xl animate-shimmer mb-4 sm:mb-6 border border-gray-100 dark:border-gray-800 flex items-center justify-center px-4">
-                  <svg className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 spin-mini" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <svg className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 spin-mini" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </div>
                 <h3 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white mb-1 sm:mb-2">Нейросеть творит магию</h3>
                 <p className="text-xs sm:text-sm text-gray-500 max-w-xs sm:max-w-sm leading-normal">Это может занять от пары секунд до 3 минут. Пожалуйста, не закрывайте страницу.</p>
