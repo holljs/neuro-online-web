@@ -292,39 +292,64 @@ export default function UserProfiles() {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-600 dark:text-gray-300">
                     <tr>
-                      <td className="p-3 font-bold text-gray-900 dark:text-white">Нейро-Художник</td>
-                      <td className="p-3">Базовая быстрая модель для иллюстраций и артов</td>
-                      <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">1 кредит</td>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Люкс-Фото</td>
+                      <td className="p-3">Премиум-генерация и редактирование по фото (Seedream 5.0 Pro)</td>
+                      <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">4 кредита</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-bold text-gray-900 dark:text-white">VIP-Микс / Мега-Микс</td>
-                      <td className="p-3">Высокая детализация, сложная композиция и текстуры</td>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Реал-Фото</td>
+                      <td className="p-3">Точное сохранение лица, мимики и внешности человека</td>
                       <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">3 кредита</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Пиар-Фото</td>
+                      <td className="p-3">Постеры, баннеры, русский текст на фото и смешивание до 10 картинок</td>
+                      <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">4 кредита</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-bold text-gray-900 dark:text-white">Бизнес / Маркетплейс</td>
-                      <td className="p-3">Предметная съёмка, карточки товаров и реклама</td>
+                      <td className="p-3">Предметная съёмка, карточки товаров и реклама (на базе Пиар-Фото)</td>
+                      <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">4 кредита</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Ультра-Реал</td>
+                      <td className="p-3">Максимальный фотореализм, студийный свет и объединение до 14 лиц</td>
+                      <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">5 кредитов</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Реставратор</td>
+                      <td className="p-3">Улучшение качества, удаление царапин и раскрашивание старых фото</td>
                       <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">3 кредита</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-bold text-gray-900 dark:text-white">Ультра-Фото</td>
-                      <td className="p-3">Максимальный фотореализм, студийный свет и реализм лиц</td>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Живое Фото</td>
+                      <td className="p-3">Анимация статичного снимка (ветер, вода, улыбка, движение камеры)</td>
+                      <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">3 кредита</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Видео-Клип</td>
+                      <td className="p-3">Видео 3–5 секунд полностью по вашему текстовому описанию</td>
                       <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">5 кредитов</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-bold text-gray-900 dark:text-white">ИИ-Режиссер (5 сек)</td>
-                      <td className="p-3">Анимация арта в динамичный видеоклип (5 секунд)</td>
+                      <td className="p-3">Видео от ByteDance со встроенным звуком и точным липсинком</td>
                       <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">30 кредитов</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-bold text-gray-900 dark:text-white">ИИ-Режиссер (10 сек)</td>
-                      <td className="p-3">Полное видео кинематографического качества (10 секунд)</td>
+                      <td className="p-3">Удлиненные ИИ-клипы премиум-качества для панорам и монтажа</td>
                       <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">50 кредитов</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-bold text-gray-900 dark:text-white">Нейро-Музыка</td>
-                      <td className="p-3">Создание музыкального трека по текстовому описанию</td>
+                      <td className="p-3">Создание музыкального трека с вокалом по вашему тексту</td>
                       <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">2 кредита</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-gray-900 dark:text-white">Озвучка текста</td>
+                      <td className="p-3">Превращает любой текст в красивую аудиозапись голосом диктора</td>
+                      <td className="p-3 font-bold text-right text-blue-600 dark:text-blue-400">1 кредит</td>
                     </tr>
                   </tbody>
                 </table>
@@ -380,10 +405,13 @@ export default function UserProfiles() {
                 <h3 className="font-bold text-gray-900 dark:text-white text-sm">
                   Какую модель Художника выбрать?
                 </h3>
-                <p>• <strong>Нейро-Художник:</strong> Идеально для быстрых идей, концептов, аватарок и фэнтези.</p>
-                <p>• <strong>Ультра-Фото:</strong> Используйте для создания портретов, людей и реальных объектов, когда важна естественность кожи и освещения.</p>
-                <p>• <strong>Бизнес:</strong> Оптимизировано под изолированные объекты на чистом фоне для WB, Ozon и сайтов.</p>
-                <p>• <strong>ИИ-Режиссер:</strong> Превращает любые сгенерированные арты в плавные 5 или 10 секундные видеоролики.</p>
+                <p>• <strong>Люкс-Фото (4 кр.):</strong> Премиум-модель Seedream 5.0 Pro — идеальна для артов, концептов, аватарок и редактирования по фото.</p>
+                <p>• <strong>Реал-Фото (3 кр.):</strong> Самый реалистичный режим для портретов — максимально сохраняет лицо и внешность человека.</p>
+                <p>• <strong>Пиар-Фото (4 кр.):</strong> Для рекламы и бизнеса — пишет русский текст на фото без ошибок и смешивает товары с разных фото.</p>
+                <p>• <strong>Ультра-Реал (5 кр.):</strong> Используйте для портретов, людей и реальных объектов, когда важна естественность кожи и освещения.</p>
+                <p>• <strong>Бизнес (4 кр.):</strong> Оптимизировано под изолированные объекты на чистом фоне для WB, Ozon и сайтов.</p>
+                <p>• <strong>Реставратор (3 кр.):</strong> Мгновенное улучшение качества и раскрашивание старых фото.</p>
+                <p>• <strong>ИИ-Режиссер (30/50 кр.):</strong> Превращает любые сгенерированные арты в плавные 5 или 10 секундные видеоролики со звуком.</p>
               </div>
 
               <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 space-y-2">
