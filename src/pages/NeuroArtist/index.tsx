@@ -128,7 +128,7 @@ export default function NeuroArtist() {
     // 🔥 ОБНОВЛЕНО: НАЗВАНИЯ И ЦЕНЫ
     const modesByCategory = {
         photo: [
-            { id: "t2i", name: "Люкс-Фото", cost: "4 кр.", desc: "Премиум генерация (Seedream 5 Pro)" },
+            { id: "t2i", name: "Люкс-Фото", cost: "4 кр.", desc: "Премиум генерация шедевров и графики с нуля или по фото" },
             { id: "vip_mix", name: "Реал-Фото", cost: "3 кр.", desc: "Точное сохранение лиц и внешности" },
             { id: "seadream_mix", name: "Пиар-Фото", cost: "4 кр.", desc: "Постеры, баннеры и рекламный дизайн" }, 
             { id: "ultra_photo", name: "Ультра-Реал", cost: "5 кр.", desc: "Премиум-реализм и русский текст" },
