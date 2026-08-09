@@ -37,6 +37,14 @@ export default function NeuroArtist() {
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
     const [copiedPrompt, setCopiedPrompt] = useState(false);
 
+    // 🔥 НОВОЕ: БОНУС ЗА ПОДПИСКУ
+    const [bonusClaimed, setBonusClaimed] = useState<boolean>(() => {
+        const savedId = localStorage.getItem("user_id");
+        if (savedId) return localStorage.getItem(`bonus_claimed_${savedId}`) === 'true';
+        return false;
+    });
+    const [isBonusLoading, setIsBonusLoading] = useState(false);
+
     useEffect(() => {
         bridge.send("VKWebAppInit").catch((err) => {
             console.log("Запуск вне VK Mini App:", err);
@@ -58,6 +66,12 @@ export default function NeuroArtist() {
     };
 
     const userId = getUserId();
+
+    useEffect(() => {
+        if (userId) {
+            setBonusClaimed(localStorage.getItem(`bonus_claimed_${userId}`) === 'true');
+        }
+    }, [userId]);
 
     const [history, setHistory] = useState<HistoryItem[]>(() => {
         try {
@@ -163,6 +177,52 @@ export default function NeuroArtist() {
         setTimeout(() => setCopiedPrompt(false), 2000);
     };
 
+    // 🔥 НОВОЕ: ФУНКЦИЯ ПОЛУЧЕНИЯ БОНУСА
+    const handleClaimBonus = async () => {
+        if (!userId) {
+            alert("🔒 Пожалуйста, авторизуйтесь через ВКонтакте!");
+            return;
+        }
+        
+        try {
+            setIsBonusLoading(true);
+            const GROUP_ID = 191367447;
+            
+            try {
+                const bridgeResponse = await bridge.send("VKWebAppAllowMessagesFromGroup", { group_id: GROUP_ID });
+                if (!bridgeResponse.result) {
+                    alert("Вы отменили разрешение. Чтобы получить бонус, нужно разрешить сообщения от сообщества.");
+                    setIsBonusLoading(false);
+                    return;
+                }
+            } catch (bridgeErr) {
+                console.log("VK Bridge недоступен или уже разрешено", bridgeErr);
+            }
+            
+            const response = await axios.post(
+                `${API_BASE}/bonus`,
+                { user_id: userId },
+                { headers: { "X-Bot-Token": BOT_TOKEN } }
+            );
+            
+            if (response.data.success) {
+                alert("🎉 Вам начислено 3 кредита! Теперь вы будете получать наши новости и акции в личные сообщения.");
+                setBonusClaimed(true);
+                if (userId) localStorage.setItem(`bonus_claimed_${userId}`, 'true');
+            }
+        } catch (e: any) {
+            if (e.response?.status === 400) {
+                alert("Вы уже получали этот бонус ранее!");
+                setBonusClaimed(true);
+                if (userId) localStorage.setItem(`bonus_claimed_${userId}`, 'true');
+            } else {
+                alert("Ошибка: " + (e.response?.data?.detail || "Не удалось получить бонус"));
+            }
+        } finally {
+            setIsBonusLoading(false);
+        }
+    };
+
     const uploadImagesToServer = async (files: File[]): Promise<string[]> => {
         const uploadedUrls: string[] = [];
         for (const file of files) {
@@ -235,7 +295,6 @@ export default function NeuroArtist() {
             alert("🔒 Пожалуйста, авторизуйтесь через ВКонтакте, чтобы использовать генерации!");
             return;
         }
-        // 🔥 ОБНОВЛЕНО: t2i теперь может работать с фото
         if (!prompt.trim() && activeMode !== "gfpgan" && activeMode !== "t2i" && selectedImages.length === 0) return;
         
         setIsGenerating(true);
@@ -310,7 +369,6 @@ export default function NeuroArtist() {
                     </div>
                 </div>
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 space-y-4 shadow-sm">
-                    {/* 🔥 ОБНОВЛЕНО: t2i добавлен в список режимов, поддерживающих загрузку изображений */}
                     {["vip_mix", "seadream_mix", "ultra_photo", "gfpgan", "i2v", "wb_card", "fashion", "food", "furniture", "t2i"].includes(activeMode) && (
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Прикрепить изображения</label>
@@ -409,6 +467,26 @@ export default function NeuroArtist() {
             </div>
 
             <div className="space-y-6">
+                {/* 🔥 НОВОЕ: БЛОК БОНУСА ЗА ПОДПИСКУ */}
+                {userId && !bonusClaimed && (
+                    <div className="rounded-2xl border border-green-200 dark:border-green-900/30 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/10 p-5 shadow-sm space-y-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl">🎁</span>
+                            <h3 className="font-bold text-sm text-gray-900 dark:text-white">Бонус за подписку</h3>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                            Разрешите рассылку от нашего сообщества — и получите <b className="text-green-600 dark:text-green-400">+3 кредита</b> на счёт бесплатно!
+                        </p>
+                        <button 
+                            onClick={handleClaimBonus}
+                            disabled={isBonusLoading}
+                            className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                            {isBonusLoading ? "Получаем..." : "Получить +3 кредита 🎉"}
+                        </button>
+                    </div>
+                )}
+
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-lg text-gray-900 dark:text-white">Последний результат</h3>
