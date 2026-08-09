@@ -67,9 +67,16 @@ export default function NeuroArtist() {
 
     const userId = getUserId();
 
-    useEffect(() => {
+        useEffect(() => {
         if (userId) {
-            setBonusClaimed(localStorage.getItem(`bonus_claimed_${userId}`) === 'true');
+            if (localStorage.getItem(`bonus_claimed_${userId}`) === 'true') {
+                setBonusClaimed(true);
+                return;
+            }
+            // Спрашиваем сервер: если бонус уже получен через бота — прячем кнопку
+            axios.get(`${API_BASE}/bonus_status/${userId}`)
+                .then((res) => { if (res.data.claimed) setBonusClaimed(true); })
+                .catch(() => {});
         }
     }, [userId]);
 
@@ -188,9 +195,13 @@ export default function NeuroArtist() {
             setIsBonusLoading(true);
             const GROUP_ID = 191367447;
             
-            try {
-                const bridgeResponse = await bridge.send("VKWebAppAllowMessagesFromGroup", { group_id: GROUP_ID });
-                if (!bridgeResponse.result) {
+                        try {
+                // ⏱ Таймаут 2.5 сек: вне ВК bridge может висеть вечно — не даём кнопке зависнуть
+                const bridgeResponse: any = await Promise.race([
+                    bridge.send("VKWebAppAllowMessagesFromGroup", { group_id: GROUP_ID }),
+                    new Promise((resolve) => setTimeout(() => resolve({ result: true }), 2500)),
+                ]);
+                if (bridgeResponse && bridgeResponse.result === false) {
                     alert("Вы отменили разрешение. Чтобы получить бонус, нужно разрешить сообщения от сообщества.");
                     setIsBonusLoading(false);
                     return;
