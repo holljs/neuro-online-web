@@ -38,7 +38,7 @@ export default function Kids() {
       title: "Нейро-Репетитор",
       age: "Школьники",
       description: "Подготовка к ОГЭ, ЕГЭ и олимпиадам с персональным ИИ-анализом",
-      price: "От 150 ₽",
+      price: "От 250 ₽",
       freeTrial: "6 кредитов в подарок",
       vkAppId: "54451631",
       route: "/kids/tutor",
