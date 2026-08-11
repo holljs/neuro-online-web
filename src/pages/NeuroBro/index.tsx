@@ -76,7 +76,7 @@ export default function NeuroBro() {
       id: "gemini_flash",
       name: "Думающая",
       cost: "15 ⚡",
-      hint: "Распознаёт фото и файлы (10⚡)",
+      hint: "Распознаёт фото и файлы (15⚡)",
     },
     {
       id: "gemini_31_pro",
@@ -247,7 +247,7 @@ export default function NeuroBro() {
         // 🔥 НОВОЕ: Уменьшаем баланс на стоимость модели
         const costMap: Record<string, number> = {
           gpt4o_mini: 3,
-          gemini_flash: 10,
+          gemini_flash: 15,
           gemini_31_pro: 50,
         };
         setEnergy((prev) => Math.max(0, prev - (costMap[selectedModel] || 0)));
@@ -266,7 +266,7 @@ export default function NeuroBro() {
     <div className="flex flex-col h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)] gap-2 sm:gap-3 relative">
       {/* Верхняя панель */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2 sm:p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-col gap-2 shadow-sm">
-                <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5">
           {/* Кнопки моделей — равномерно растянуты на любом экране */}
           <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800 p-1 rounded-xl">
             {models.map((m) => (
