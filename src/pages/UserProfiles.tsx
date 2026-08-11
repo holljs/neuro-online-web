@@ -379,7 +379,7 @@ export default function UserProfiles() {
                     <tr>
                       <td className="p-3 font-bold text-gray-900 dark:text-white">Думающая</td>
                       <td className="p-3">Анализ фотографий, документов, развернутые тексты</td>
-                      <td className="p-3 font-bold text-right text-purple-600 dark:text-purple-400">10 энергии</td>
+                      <td className="p-3 font-bold text-right text-purple-600 dark:text-purple-400">15 энергии</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-bold text-gray-900 dark:text-white">Про-Кодер</td>
