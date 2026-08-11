@@ -45,6 +45,9 @@ export default function NeuroArtist() {
     });
     const [isBonusLoading, setIsBonusLoading] = useState(false);
 
+    // 🔥 НОВОЕ: Баланс кредитов
+    const [balance, setBalance] = useState<number | null>(null);
+
     useEffect(() => {
         bridge.send("VKWebAppInit").catch((err) => {
             console.log("Запуск вне VK Mini App:", err);
@@ -67,7 +70,7 @@ export default function NeuroArtist() {
 
     const userId = getUserId();
 
-        useEffect(() => {
+    useEffect(() => {
         if (userId) {
             if (localStorage.getItem(`bonus_claimed_${userId}`) === 'true') {
                 setBonusClaimed(true);
@@ -78,6 +81,23 @@ export default function NeuroArtist() {
                 .then((res) => { if (res.data.claimed) setBonusClaimed(true); })
                 .catch(() => {});
         }
+    }, [userId]);
+
+    // 🔥 НОВОЕ: Загружаем баланс кредитов с сервера
+    const refreshBalance = async () => {
+        if (!userId) return;
+        try {
+            const res = await axios.get(`${API_BASE}/user/${userId}?_t=${Date.now()}`, {
+                headers: { "X-Bot-Token": BOT_TOKEN },
+            });
+            if (res.data.success) setBalance(res.data.balance ?? 0);
+        } catch (e) {
+            console.error("Ошибка загрузки баланса:", e);
+        }
+    };
+
+    useEffect(() => {
+        if (userId) refreshBalance();
     }, [userId]);
 
     const [history, setHistory] = useState<HistoryItem[]>(() => {
@@ -195,7 +215,7 @@ export default function NeuroArtist() {
             setIsBonusLoading(true);
             const GROUP_ID = 191367447;
             
-                        try {
+            try {
                 // ⏱ Таймаут 2.5 сек: вне ВК bridge может висеть вечно — не даём кнопке зависнуть
                 const bridgeResponse: any = await Promise.race([
                     bridge.send("VKWebAppAllowMessagesFromGroup", { group_id: GROUP_ID }),
@@ -220,6 +240,7 @@ export default function NeuroArtist() {
                 alert("🎉 Вам начислено 3 кредита! Теперь вы будете получать наши новости и акции в личные сообщения.");
                 setBonusClaimed(true);
                 if (userId) localStorage.setItem(`bonus_claimed_${userId}`, 'true');
+                refreshBalance();
             }
         } catch (e: any) {
             if (e.response?.status === 400) {
@@ -289,9 +310,11 @@ export default function NeuroArtist() {
                 };
                 setHistory((prev) => [newItem, ...prev]);
                 setTimeout(loadLatestServerHistory, 1000);
+                refreshBalance();
             } else if (res.data.success === false) {
                 alert("Ошибка генерации: " + (res.data.error || "Неизвестная ошибка"));
                 setIsGenerating(false);
+                refreshBalance();
             } else {
                 setTimeout(() => checkStatus(taskId, modeObjName, imageUrls, currentPrompt, attemptCount + 1), 3000);
             }
@@ -337,6 +360,7 @@ export default function NeuroArtist() {
         } catch (e: any) {
             console.error("Ошибка генерации:", e);
             alert(e.response?.data?.detail || "Ошибка подключения к бэкенду или недостаточно кредитов.");
+            refreshBalance();
             setIsGenerating(false);
         }
     };
@@ -358,7 +382,16 @@ export default function NeuroArtist() {
             )}
             <div className="lg:col-span-2 space-y-6">
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Студия генерации</h2>
+                    {/* 🔥 НОВОЕ: заголовок + плашка баланса */}
+                    <div className="flex items-start justify-between gap-2 flex-wrap mb-1">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Студия генерации</h2>
+                        {userId && balance !== null && (
+                            <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 px-3 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 shrink-0">
+                                <span className="text-sm">🪙</span>
+                                <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{balance} кр.</span>
+                            </div>
+                        )}
+                    </div>
                     <p className="text-sm text-gray-500 mb-6">Выберите категорию, режим и настройте параметры запроса.</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
                         {[{ id: "photo", label: "Фото и Арт" }, { id: "video", label: "Видео" }, { id: "audio", label: "Музыка и Звук" }, { id: "business", label: "Для Бизнеса" }].map((cat) => (
@@ -499,7 +532,7 @@ export default function NeuroArtist() {
                 )}
 
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                         <h3 className="font-bold text-lg text-gray-900 dark:text-white">Последний результат</h3>
                         <a href="/history" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition cursor-pointer">
                             <span>Вся история</span><span>→</span>
