@@ -403,7 +403,7 @@ export default function NeuroArtist() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
                         {currentModes.map((mode) => (
                             <button key={mode.id} onClick={() => setActiveMode(mode.id)} className={`p-4 rounded-xl border text-left transition ${activeMode === mode.id ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20" : "border-gray-200 dark:border-gray-800 hover:border-gray-300"} cursor-pointer`}>
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
                                     <span className="font-bold text-sm text-gray-900 dark:text-white">{mode.name}</span>
                                     <span className="text-xs px-2 py-0.5 rounded font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{mode.cost}</span>
                                 </div>
@@ -433,7 +433,7 @@ export default function NeuroArtist() {
                                     <label className="w-20 h-20 rounded-xl border-2 border-dashed border-blue-400/60 dark:border-blue-500/40 hover:border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 flex flex-col items-center justify-center cursor-pointer transition text-blue-600 dark:text-blue-400 hover:scale-105">
                                         <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
                                         <span className="text-xl font-bold leading-none mb-0.5">+</span>
-                                        <span className="text-[10px] font-semibold">Ещё</span>
+                                        <span className="text-[0.625rem] font-semibold">Ещё</span>
                                     </label>
                                 </div>
                             )}
@@ -551,13 +551,13 @@ export default function NeuroArtist() {
                                 <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3 relative">
                                     <div className="flex justify-between items-center text-xs">
                                         <span className="font-bold text-blue-600 dark:text-blue-400">{item.modeName}</span>
-                                        <span className="text-gray-400 text-[10px]">{item.date}</span>
+                                        <span className="text-gray-400 text-[0.625rem]">{item.date}</span>
                                     </div>
                                     <div className="space-y-1.5 bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200/80 dark:border-gray-800">
                                         <p className={`text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium ${!isPromptExpanded ? "line-clamp-3" : ""}`}>
                                             "{item.prompt}"
                                         </p>
-                                        <div className="flex items-center justify-between pt-1 text-[11px]">
+                                        <div className="flex items-center justify-between pt-1 text-[0.6875rem]">
                                             {isLongPrompt && (
                                                 <button onClick={() => setIsPromptExpanded(!isPromptExpanded)} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 font-semibold flex items-center gap-1 cursor-pointer">
                                                     <span>{isPromptExpanded ? "Свернуть" : "Развернуть"}</span>
