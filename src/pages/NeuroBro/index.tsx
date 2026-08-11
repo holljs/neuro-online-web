@@ -75,7 +75,7 @@ export default function NeuroBro() {
     {
       id: "gemini_flash",
       name: "Думающая",
-      cost: "10 ⚡",
+      cost: "15 ⚡",
       hint: "Распознаёт фото и файлы (10⚡)",
     },
     {
