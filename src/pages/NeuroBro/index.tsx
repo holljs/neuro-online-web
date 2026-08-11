@@ -266,38 +266,33 @@ export default function NeuroBro() {
     <div className="flex flex-col h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)] gap-2 sm:gap-3 relative">
       {/* Верхняя панель */}
       <div className="rounded-2xl border border-gray-200 bg-white p-2 sm:p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-col gap-2 shadow-sm">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800 p-1 rounded-xl overflow-x-auto no-scrollbar flex-1 min-w-0">
+                <div className="flex flex-col gap-1.5">
+          {/* Кнопки моделей — равномерно растянуты на любом экране */}
+          <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800 p-1 rounded-xl">
             {models.map((m) => (
-              <div key={m.id} className="relative group flex-1 sm:flex-none">
-                <button
-                  onClick={() => setSelectedModel(m.id)}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer text-center ${
-                    selectedModel === m.id
-                      ? "bg-blue-600 text-white shadow-sm font-bold"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  }`}
-                >
-                  {m.name}
-                </button>
-                {/* 🔥 НОВОЕ: Тултип при наведении */}
-                <div className="absolute z-20 left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-gray-900 dark:bg-gray-700 text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition pointer-events-none whitespace-nowrap">
-                  {m.hint}
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
-                </div>
-              </div>
+              <button
+                key={m.id}
+                onClick={() => setSelectedModel(m.id)}
+                className={`flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition cursor-pointer text-center ${
+                  selectedModel === m.id
+                    ? "bg-blue-600 text-white shadow-sm font-bold"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                {m.name}
+              </button>
             ))}
           </div>
 
-          {/* 🔥 НОВОЕ: Отображение баланса энергии */}
-          <div className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 px-3 py-1 rounded-xl border border-blue-100 dark:border-blue-900/40">
-            <span className="text-xs">⚡</span>
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-300">
-              {energy}
-            </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400">
-              энергии
-            </span>
+          {/* 🔥 НОВОЕ: подсказка выбранной модели + баланс (видно и на телефоне!) */}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 leading-snug min-w-0">
+              {models.find((m) => m.id === selectedModel)?.hint}
+            </p>
+            <div className="flex items-center gap-1 shrink-0 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-lg border border-blue-100 dark:border-blue-900/40">
+              <span className="text-[10px]">⚡</span>
+              <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300">{energy}</span>
+            </div>
           </div>
         </div>
 
