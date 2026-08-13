@@ -19,7 +19,7 @@ export default function NeuroBro() {
   const [selectedPersona, setSelectedPersona] = useState("default");
   const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
 
-  // 🔥 НОВОЕ: Баланс энергии
+  // 🔥 Баланс энергии
   const [energy, setEnergy] = useState<number>(0);
   const [bonusClaimed, setBonusClaimed] = useState<boolean>(false);
 
@@ -28,7 +28,7 @@ export default function NeuroBro() {
   const [isListening, setIsListening] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
-  // Ref для блока чата (чтобы прокручивать строго внутри окна)
+  // Ref для блока чата (прокрутка строго внутри окна)
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const [userId, setUserId] = useState<number>(() => {
@@ -98,7 +98,7 @@ export default function NeuroBro() {
     { id: "strategist", name: "Бизнес-Стратег" },
   ];
 
-  // Точечная прокрутка внутри блока чата (не дергает страницу)
+  // Точечная прокрутка внутри блока чата
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
@@ -123,7 +123,7 @@ export default function NeuroBro() {
       }
     };
 
-    // 🔥 НОВОЕ: Загружаем баланс энергии
+    // 🔥 Загружаем баланс энергии
     const fetchEnergy = async () => {
       try {
         const res = await axios.get(`${API_BASE}/user/${userId}`, {
@@ -244,7 +244,7 @@ export default function NeuroBro() {
           ...prev,
           { role: "assistant", content: res.data.response },
         ]);
-        // 🔥 НОВОЕ: Уменьшаем баланс на стоимость модели
+        // 🔥 Уменьшаем баланс на стоимость модели
         const costMap: Record<string, number> = {
           gpt4o_mini: 3,
           gemini_flash: 15,
@@ -263,8 +263,8 @@ export default function NeuroBro() {
   };
 
   return (
-       <div className="flex flex-col h-[calc(100dvh-150px)] sm:h-[calc(100dvh-120px)] gap-1.5 sm:gap-3 relative">
-            {/* Верхняя панель — компактная на мобильном */}
+    <div className="flex flex-col h-[calc(100dvh-150px)] sm:h-[calc(100dvh-120px)] gap-1.5 sm:gap-3 relative">
+      {/* Верхняя панель — компактная на мобильном */}
       <div className="rounded-2xl border border-gray-200 bg-white p-1.5 sm:p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-col gap-1.5 sm:gap-2 shadow-sm">
         {/* Ряд 1: модели + энергия в одном ряду */}
         <div className="flex items-center gap-1.5">
@@ -300,31 +300,6 @@ export default function NeuroBro() {
             value={selectedPersona}
             onChange={(e) => setSelectedPersona(e.target.value)}
             className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent px-2.5 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer"
-          >
-            {personas.map((p) => (
-              <option key={p.id} value={p.id} className="dark:bg-gray-900">
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => setShowConfirmModal(true)}
-            title="Очистить диалог"
-            className="p-1.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition shrink-0 cursor-pointer"
-          >
-            <svg className="w-4 h-4 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-        <div className="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-800/60 pt-1.5">
-          <select
-            value={selectedPersona}
-            onChange={(e) => setSelectedPersona(e.target.value)}
-            className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent px-2.5 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer"
           >
             {personas.map((p) => (
               <option key={p.id} value={p.id} className="dark:bg-gray-900">
@@ -463,7 +438,7 @@ export default function NeuroBro() {
           </div>
         )}
 
-        <div className="flex items-center gap-1 sm:gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1 pl-1.5 pr-1 border border-gray-100 dark:border-gray-800 max-w-full">
+        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1 px-2.5 border border-gray-100 dark:border-gray-800">
           <label
             className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition shrink-0"
             title="Прикрепить фото"
@@ -514,7 +489,9 @@ export default function NeuroBro() {
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder={isListening ? "Говорите..." : "Спроси меня о чем угодно..."}
+            placeholder={
+              isListening ? "Говорите..." : "Спроси меня о чем угодно..."
+            }
             className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none px-1"
           />
 
@@ -524,7 +501,10 @@ export default function NeuroBro() {
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0 cursor-pointer"
             title="Отправить"
           >
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ml-0.5" viewBox="0 0 24 24">
+            <svg
+              className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ml-0.5"
+              viewBox="0 0 24 24"
+            >
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
             </svg>
           </button>
