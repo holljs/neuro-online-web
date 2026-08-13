@@ -263,17 +263,17 @@ export default function NeuroBro() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)] gap-2 sm:gap-3 relative">
-      {/* Верхняя панель */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-2 sm:p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-col gap-2 shadow-sm">
-        <div className="flex flex-col gap-1.5">
-          {/* Кнопки моделей — равномерно растянуты на любом экране */}
-          <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800 p-1 rounded-xl">
+       <div className="flex flex-col h-[calc(100dvh-150px)] sm:h-[calc(100dvh-120px)] gap-1.5 sm:gap-3 relative">
+            {/* Верхняя панель — компактная на мобильном */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-1.5 sm:p-3 dark:border-gray-800 dark:bg-gray-900 flex flex-col gap-1.5 sm:gap-2 shadow-sm">
+        {/* Ряд 1: модели + энергия в одном ряду */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800 p-1 rounded-xl flex-1 min-w-0">
             {models.map((m) => (
               <button
                 key={m.id}
                 onClick={() => setSelectedModel(m.id)}
-                className={`flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition cursor-pointer text-center ${
+                className={`flex-1 min-w-0 px-1 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold whitespace-nowrap transition cursor-pointer text-center ${
                   selectedModel === m.id
                     ? "bg-blue-600 text-white shadow-sm font-bold"
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
@@ -283,18 +283,42 @@ export default function NeuroBro() {
               </button>
             ))}
           </div>
-
-          {/* 🔥 НОВОЕ: подсказка выбранной модели + баланс (видно и на телефоне!) */}
-          <div className="flex items-center justify-between gap-2 px-1">
-            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 leading-snug min-w-0">
-              {models.find((m) => m.id === selectedModel)?.hint}
-            </p>
-            <div className="flex items-center gap-1 shrink-0 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-lg border border-blue-100 dark:border-blue-900/40">
-              <span className="text-[10px]">⚡</span>
-              <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300">{energy}</span>
-            </div>
+          <div className="flex items-center gap-0.5 shrink-0 bg-blue-50 dark:bg-blue-950/30 px-1.5 sm:px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/40">
+            <span className="text-[10px]">⚡</span>
+            <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300">{energy}</span>
           </div>
         </div>
+
+        {/* Подсказка модели — только на ПК, на телефоне экономим место */}
+        <p className="hidden sm:block text-[11px] text-gray-500 dark:text-gray-400 leading-snug px-1">
+          {models.find((m) => m.id === selectedModel)?.hint}
+        </p>
+
+        {/* Ряд 2: персона + корзина */}
+        <div className="flex items-center gap-2 border-t border-gray-100 dark:border-gray-800/60 pt-1.5">
+          <select
+            value={selectedPersona}
+            onChange={(e) => setSelectedPersona(e.target.value)}
+            className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent px-2.5 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer"
+          >
+            {personas.map((p) => (
+              <option key={p.id} value={p.id} className="dark:bg-gray-900">
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setShowConfirmModal(true)}
+            title="Очистить диалог"
+            className="p-1.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition shrink-0 cursor-pointer"
+          >
+            <svg className="w-4 h-4 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-800/60 pt-1.5">
           <select
