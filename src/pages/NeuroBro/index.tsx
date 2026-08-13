@@ -443,7 +443,7 @@ export default function NeuroBro() {
       </div>
 
       {/* Панель ввода */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900 space-y-1.5 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-1.5 sm:p-2 dark:border-gray-800 dark:bg-gray-900 space-y-1.5 shadow-sm">
         {attachedPreview && (
           <div className="flex items-center gap-2 p-1 px-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl w-fit ml-1 border border-blue-200 dark:border-blue-800">
             <img
@@ -463,7 +463,7 @@ export default function NeuroBro() {
           </div>
         )}
 
-        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1 px-2.5 border border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-1 sm:gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-1 pl-1.5 pr-1 border border-gray-100 dark:border-gray-800 max-w-full">
           <label
             className="cursor-pointer p-1.5 rounded-full text-gray-400 hover:text-blue-600 transition shrink-0"
             title="Прикрепить фото"
@@ -514,22 +514,17 @@ export default function NeuroBro() {
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder={
-              isListening ? "Говорите..." : "Спроси меня о чем угодно..."
-            }
-            className="flex-1 bg-transparent text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none px-1"
+            placeholder={isListening ? "Говорите..." : "Спроси меня о чем угодно..."}
+            className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none px-1"
           />
 
           <button
             onClick={handleSendMessage}
             disabled={isLoading || (!inputPrompt.trim() && !attachedPreview)}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0 cursor-pointer"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-40 shadow-md shrink-0 cursor-pointer"
             title="Отправить"
           >
-            <svg
-              className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ml-0.5"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ml-0.5" viewBox="0 0 24 24">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
             </svg>
           </button>
