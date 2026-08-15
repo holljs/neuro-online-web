@@ -225,8 +225,8 @@ export default function NeuroArtist() {
       {
         id: "music",
         name: "Нейро-Музыка",
-        cost: "🔥 БЕСПЛАТНО",
-        desc: "Полноценная песня с вокалом до 5 мин (MiniMax Music 3)",
+        cost: "3 кр.",
+        desc: "Создание песни с вокалом по тексту",
       },
       {
         id: "tts",
@@ -475,6 +475,18 @@ export default function NeuroArtist() {
     )
       return;
 
+    if (activeMode === "music") {
+      const lyricsLen = prompt.trim().length;
+      if (lyricsLen < 10) {
+        alert("Текст песни должен быть не короче 10 символов.");
+        return;
+      }
+      if (lyricsLen > 600) {
+        alert("Текст песни не должен превышать 600 символов.");
+        return;
+      }
+    }
+
     setIsGenerating(true);
     setCurrentResultUrl(null);
     const currentModeObj = currentModes.find((m) => m.id === activeMode);
@@ -681,14 +693,6 @@ export default function NeuroArtist() {
           )}
           {activeMode === "music" && (
             <div className="space-y-3">
-              {/* Летняя акция */}
-              <div className="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/10 border border-orange-200 dark:border-orange-800/30 rounded-xl p-3">
-                <span className="text-lg">☀️</span>
-                <p className="text-xs font-semibold text-orange-700 dark:text-orange-300">
-                  ЛЕТНЯЯ АКЦИЯ: Песни БЕСПЛАТНО до 31 августа! Ловите хайп! 🎶
-                </p>
-              </div>
-
               <label className="block text-xs font-semibold text-gray-500 uppercase">
                 Стиль музыки (выберите или введите свой)
               </label>
@@ -704,49 +708,49 @@ export default function NeuroArtist() {
                     value="Романтичный Поп, женский вокал"
                     className="dark:bg-gray-900"
                   >
-                    🎤 Романтичный Поп
+                    Романтичный Поп
                   </option>
                   <option
                     value="Эпичный Рок, мужской вокал, электрогитары"
                     className="dark:bg-gray-900"
                   >
-                    🎸 Эпичный Рок
+                    Эпичный Рок
                   </option>
                   <option
                     value="Хип-Хоп и Рэп, глубокий бас, мужской вокал"
                     className="dark:bg-gray-900"
                   >
-                    🎤 Хип-Хоп / Рэп
+                    Хип-Хоп / Рэп
                   </option>
                   <option
                     value="Расслабляющий Джаз, саксофон, мягкий вокал"
                     className="dark:bg-gray-900"
                   >
-                    🎷 Джаз
+                    Джаз
                   </option>
                   <option
                     value="Synthwave 80s, ретро синтезаторы, энергичный бит"
                     className="dark:bg-gray-900"
                   >
-                    🕹️ Synthwave 80s
+                    Synthwave 80s
                   </option>
                   <option
                     value="Кинематографичный Оркестр, эпичный, без вокала"
                     className="dark:bg-gray-900"
                   >
-                    🎬 Кинематографичный
+                    Кинематографичный
                   </option>
                   <option
                     value="Детская песня, весёлая, яркий вокал"
                     className="dark:bg-gray-900"
                   >
-                    🧸 Детская песня
+                    Детская песня
                   </option>
                   <option
                     value="Lo-Fi Hip Hop, спокойный бит, без вокала"
                     className="dark:bg-gray-900"
                   >
-                    🌙 Lo-Fi
+                    Lo-Fi
                   </option>
                 </select>
                 <input
@@ -761,7 +765,7 @@ export default function NeuroArtist() {
               {/* Подсказка по тегам секций */}
               <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3">
                 <p className="text-[0.6875rem] text-blue-600 dark:text-blue-400 font-semibold mb-1">
-                  💡 Совет: используйте теги секций в тексте песни
+                  Совет: используйте теги секций в тексте песни
                 </p>
                 <p className="text-[0.625rem] text-blue-500 dark:text-blue-400/70 font-mono">
                   [verse] — куплет · [chorus] — припев · [bridge] — бридж ·
@@ -780,6 +784,7 @@ export default function NeuroArtist() {
                     : "Текстовое описание (Промпт)"}
               </label>
               <textarea
+                maxLength={activeMode === "music" ? 600 : 5000}
                 rows={activeMode === "music" ? 8 : 3}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
