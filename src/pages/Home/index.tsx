@@ -68,6 +68,33 @@ export default function Home() {
             </span>
           </div>
         </Link>
+        {/* Карточка 3: Автопостинг */}
+        <Link
+          to="/auto-posting"
+          className="group rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm hover:border-brand-500 dark:hover:border-brand-500 transition-all duration-200 flex flex-col justify-between"
+        >
+          <div className="space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                Автопостинг
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+                ИИ сам создаёт картинки и публикует их в вашу группу ВК по расписанию. Вы спите — контент идёт!
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-400">от 900 ₽/мес</span>
+            <span className="text-xs font-bold text-brand-600 dark:text-brand-400 group-hover:translate-x-1 transition-transform">
+              Открыть →
+            </span>
+          </div>
+        </Link>
       </div>
     </div>
   );

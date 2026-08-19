@@ -25,6 +25,7 @@ import NeuroArtist from "./pages/NeuroArtist";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import Kids from "./pages/Kids"; // Детский центр
+import AutoPosting from "./pages/AutoPosting";
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/neuro-bro" element={<NeuroBro />} />
             <Route path="/neuro-artist" element={<NeuroArtist />} />
             <Route path="/kids" element={<Kids />} />
+            <Route path="/auto-posting" element={<AutoPosting />} />
             
             {/* 👤 ПРОФИЛЬ И НАСТРОЙКИ */}
             <Route path="/history" element={<HistoryPage />} />
