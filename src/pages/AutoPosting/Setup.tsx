@@ -130,20 +130,20 @@ const Setup = () => {
           <label className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${sourceType === "donor" ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20" : "border-gray-200 dark:border-gray-700"}`}>
             <input type="radio" className="sr-only" checked={sourceType === "donor"} onChange={() => setSourceType("donor")} />
             <svg className="w-6 h-6 text-blue-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-            <div className="font-bold text-gray-900 dark:text-white text-sm">Группы-доноры</div>
-            <div className="text-xs text-gray-500 mt-1">Картинки будут похожи на донорские, но НОВЫЕ и уникальные — без чужих ссылок и названий</div>
+            <div className="font-bold text-gray-900 dark:text-white text-sm">📋 Группы-доноры</div>
+            <div className="text-xs text-gray-500 mt-1">Берём посты из чужих групп. DeepSeek делает рерайт — пост становится уникальным, без ссылок и рекламы донора. Ниже можно включить <b>зеркало</b> (постим сразу как у донора) или постить по расписанию.</div>
           </label>
           <label className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${sourceType === "themes" ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20" : "border-gray-200 dark:border-gray-700"}`}>
             <input type="radio" className="sr-only" checked={sourceType === "themes"} onChange={() => setSourceType("themes")} />
             <svg className="w-6 h-6 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 17.036H3v-3.572L16.732 3.732z" /></svg>
-            <div className="font-bold text-gray-900 dark:text-white text-sm">Мои темы</div>
-            <div className="text-xs text-gray-500 mt-1">Вы пишете список тем — ИИ рисует картинки по ним</div>
+            <div className="font-bold text-gray-900 dark:text-white text-sm">🎯 Мои темы</div>
+            <div className="text-xs text-gray-500 mt-1">Вы пишете список тем на неделю — DeepSeek сам напишет и сгенерирует посты. Темы можно менять в любой момент.</div>
           </label>
           <label className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${sourceType === "ai" ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20" : "border-gray-200 dark:border-gray-700"}`}>
             <input type="radio" className="sr-only" checked={sourceType === "ai"} onChange={() => setSourceType("ai")} />
             <svg className="w-6 h-6 text-purple-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-            <div className="font-bold text-gray-900 dark:text-white text-sm">Придумай за меня</div>
-            <div className="text-xs text-gray-500 mt-1">Опишите группу — ИИ придумает темы и сгенерирует картинки по ним</div>
+            <div className="font-bold text-gray-900 dark:text-white text-sm">🤖 Придумай за меня</div>
+            <div className="text-xs text-gray-500 mt-1">Опишите о чём ваша группа — DeepSeek сам подберёт интересные темы и будет писать посты.</div>
           </label>
         </div>
 
