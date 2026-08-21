@@ -176,26 +176,28 @@ const Setup = () => {
           <div>
         {!mirror && (
           <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сколько постов в день?</label>
-        <div className="flex items-center gap-4 mb-4">
-          <button onClick={() => setPostsPerDay(Math.max(1, postsPerDay - 1))}
-            className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200">−</button>
-          <span className="text-2xl font-bold text-gray-900 dark:text-white w-24 text-center">{postsPerDay} в день</span>
-          <button onClick={() => setPostsPerDay(Math.min(10, postsPerDay + 1))}
-            className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200">+</button>
-        </div>
+        {!mirror && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сколько постов в день?</label>
+            <div className="flex items-center gap-4">
+              <button onClick={() => setPostsPerDay(Math.max(1, postsPerDay - 1))}
+                className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200">−</button>
+              <span className="text-2xl font-bold text-gray-900 dark:text-white w-24 text-center">{postsPerDay} в день</span>
+              <button onClick={() => setPostsPerDay(Math.min(10, postsPerDay + 1))}
+                className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200">+</button>
+            </div>
           </div>
         )}
 
         {sourceType === "donor" && (
           <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 cursor-pointer mb-4">
-          </div>
-        )}
+            <input type="checkbox" checked={mirror} onChange={(e) => setMirror(e.target.checked)} className="w-5 h-5 text-brand-600" />
             <span className="text-sm text-gray-700 dark:text-gray-300">
               <b>Зеркальный режим:</b> пост выходит у клиента сразу, как только появился у донора
             </span>
           </label>
         )}
+
 
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Время публикаций (система распределит автоматически):</label>
         <div className="flex gap-2 flex-wrap">
