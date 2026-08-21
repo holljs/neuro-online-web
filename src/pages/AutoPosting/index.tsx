@@ -79,7 +79,7 @@ const AutoPosting = () => {
               <p className="opacity-90 mt-1">Здравствуйте, {myStatus.me?.first_name}</p>
             </div>
           </div>
-          <p className="opacity-95">Токен активен, найдено групп: {myStatus.groups?.length || 0}</p>
+          <p className="opacity-95">Токен активен. Вы админ в {myStatus.groups?.length || 0} группах — группу для постинга можно сменить в настройках.</p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
