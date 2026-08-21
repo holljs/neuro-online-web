@@ -172,6 +172,8 @@ const Setup = () => {
         <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)}
           placeholder="Например: Салон «Лилия» | Коломна | Запись в ЛС"
           className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 mb-4" />
+        {!mirror && (
+          <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сколько постов в день?</label>
         <div className="flex items-center gap-4 mb-4">
           <button onClick={() => setPostsPerDay(Math.max(1, postsPerDay - 1))}
@@ -183,7 +185,8 @@ const Setup = () => {
 
         {sourceType === "donor" && (
           <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 cursor-pointer mb-4">
-            <input type="checkbox" checked={mirror} onChange={(e) => setMirror(e.target.checked)} className="w-5 h-5 text-brand-600" />
+          </div>
+        )}
             <span className="text-sm text-gray-700 dark:text-gray-300">
               <b>Зеркальный режим:</b> пост выходит у клиента сразу, как только появился у донора
             </span>
