@@ -82,6 +82,48 @@ const AutoPosting = () => {
           <p className="opacity-95">Токен активен, найдено групп: {myStatus.groups?.length || 0}</p>
         </div>
 
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{myStatus.posts_today || 0}</div>
+            <div className="text-xs text-gray-500 mt-1">Постов сегодня</div>
+          </div>
+          <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{myStatus.posts_used || 0}</div>
+            <div className="text-xs text-gray-500 mt-1">Всего опубликовано</div>
+          </div>
+          <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">{Math.max(0, (myStatus.posts_per_month || 0) - (myStatus.posts_used || 0))}</div>
+            <div className="text-xs text-gray-500 mt-1">Осталось</div>
+          </div>
+          <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 text-center">
+            <div className="text-2xl font-bold text-brand-600">{myStatus.posts_per_month || 0}</div>
+            <div className="text-xs text-gray-500 mt-1">Лимит / мес</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 space-y-2">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            <b>📌 Группа для постинга:</b> {myStatus.groups?.find((g: any) => g.id === myStatus.current_group)?.name || "не выбрана"}
+          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            <b>🔄 Доноры:</b> {myStatus.settings?.donors?.length ? myStatus.settings.donors.join(", ") : "не подключены"}
+          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            <b>👥 Вы админ в группах:</b> {myStatus.groups?.map((g: any) => g.name).join(", ")}
+          </p>
+        </div>
+
+        <button onClick={async () => {
+          const res = await fetch("/api/autoposter/pay", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ client_id: myStatus.client_id, tariff: myStatus.tariff || "start" }),
+          });
+          const data = await res.json();
+          if (data.ok) window.location.href = data.url;
+        }} className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold hover:bg-green-600 transition-colors shadow-lg">
+          💳 Пополнить лимит постов
+        </button>
+
         <button onClick={() => navigate(`/autoposter/setup?client_id=${myStatus.client_id}`)}
           className="w-full bg-brand-500 text-white py-5 rounded-2xl font-bold text-lg hover:bg-brand-600 transition-colors shadow-lg">
           ⚙️ Настроить нейро-редактор →
