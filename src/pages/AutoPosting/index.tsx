@@ -1,194 +1,215 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+
+const OAUTH_URL = "https://oauth.vk.com/authorize?client_id=2685278&scope=friends,messages,wall,groups,photos,offline&redirect_uri=https://oauth.vk.com/blank.html&response_type=token&v=5.199";
 
 const AutoPosting = () => {
+  const navigate = useNavigate();
+  const [tokenInput, setTokenInput] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [myStatus, setMyStatus] = useState<any>(null);
+
+  const getUserId = () => localStorage.getItem("vk_user_id") || localStorage.getItem("user_id");
+
   useEffect(() => {
-    document.title = "Автопостинг в ВК — Нейро-Мастер";
+    document.title = "Нейро-редактор в ВК — Нейро-Мастер";
+    const uid = getUserId();
+    if (!uid) { setChecking(false); return; }
+    fetch(`/api/autoposter/my?user_id=${uid}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok) setMyStatus(data);
+      })
+      .finally(() => setChecking(false));
   }, []);
 
-  const oauthUrl = "https://oauth.vk.com/authorize?client_id=2685278&scope=groups,wall,photos,offline&redirect_uri=https://neuro-master.online/autoposter/callback&response_type=code&v=5.199";
+  const extractToken = (input: string): string | null => {
+    const m = input.match(/access_token=([^&\s]+)/);
+    if (m) return m[1];
+    const t = input.trim();
+    if (t.length > 80 && !t.includes(" ")) return t;
+    return null;
+  };
 
+  const handleConnect = async () => {
+    const token = extractToken(tokenInput);
+    if (!token) { setError("Не нашли токен. Вставьте адресную строку целиком."); return; }
+    setError(""); setLoading(true);
+    try {
+      const res = await fetch("/api/autoposter/connect", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, user_id: getUserId() }),
+      });
+      const data = await res.json();
+      if (data.ok) navigate(`/autoposter/setup?client_id=${data.client_id}`);
+      else setError(data.error || "Ошибка подключения");
+    } catch { setError("Ошибка соединения с сервером"); }
+    finally { setLoading(false); }
+  };
+
+  // Авто-отправка при вставке токена
+  useEffect(() => {
+    if (!tokenInput) return;
+    const t = extractToken(tokenInput);
+    if (t && t.length > 80) {
+      const timer = setTimeout(() => handleConnect(), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [tokenInput]);
+
+  if (checking) {
+    return <div className="max-w-2xl mx-auto mt-20 text-center text-gray-500">Проверяем ваш профиль...</div>;
+  }
+
+  // 🎯 Если уже подключён — сразу в визард (с возможностью добавить группу)
+  if (myStatus?.has_token) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div className="rounded-2xl bg-gradient-to-br from-green-500 to-green-600 p-8 text-white shadow-lg">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">Вы уже подключены!</h1>
+              <p className="opacity-90 mt-1">Здравствуйте, {myStatus.me?.first_name}</p>
+            </div>
+          </div>
+          <p className="opacity-95">Токен активен, найдено групп: {myStatus.groups?.length || 0}</p>
+        </div>
+
+        <button onClick={() => navigate(`/autoposter/setup?client_id=${myStatus.client_id}`)}
+          className="w-full bg-brand-500 text-white py-5 rounded-2xl font-bold text-lg hover:bg-brand-600 transition-colors shadow-lg">
+          ⚙️ Настроить нейро-редактор →
+        </button>
+
+        <details className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+          <summary className="cursor-pointer font-semibold text-gray-900 dark:text-white">
+            Подключить новый аккаунт ВК
+          </summary>
+          <div className="mt-4 p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-gray-700 dark:text-gray-300">
+            ⚠️ <b>Внимание:</b> при повторной авторизации старый токен перестанет работать. Используйте это только если хотите подключить нейро-редактор с другого аккаунта ВК. Для добавления ещё одной группы в текущий аккаунт — просто нажмите «Настроить нейро-редактор» выше (все ваши группы уже там).
+          </div>
+          <button onClick={() => {
+            const a = document.createElement("a"); a.href = OAUTH_URL; a.target = "_blank";
+            a.rel = "noreferrer noopener"; document.body.appendChild(a); a.click(); a.remove();
+          }} className="mt-4 w-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            Открыть окно ВК для нового аккаунта
+          </button>
+        </details>
+      </div>
+    );
+  }
+
+  // 🎯 Первый раз — лендинг с OAuth
   return (
     <div className="space-y-8">
-      {/* Hero */}
       <div className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 p-8 text-white shadow-lg">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4">🤖 Автопостинг в ВК</h1>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="5" y="9" width="14" height="10" rx="2" strokeWidth="2" />
+              <path strokeLinecap="round" strokeWidth="2" d="M12 9V5" />
+              <circle cx="12" cy="4" r="1.5" strokeWidth="2" />
+              <path strokeLinecap="round" strokeWidth="2" d="M9.5 13v2M14.5 13v2" />
+            </svg>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold">Нейро-редактор в ВК</h1>
+        </div>
         <p className="text-lg opacity-95 mb-6 leading-relaxed">
           ИИ сам создаёт уникальные картинки и публикует их в вашу группу по расписанию.
-          <br />
-          Вы спите — контент идёт!
+          <br />Вы спите — контент идёт!
         </p>
-        <a
-          href={oauthUrl}
-          className="inline-block bg-white text-brand-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg"
-        >
+        <button onClick={() => {
+            const a = document.createElement("a"); a.href = OAUTH_URL; a.target = "_blank";
+            a.rel = "noreferrer noopener"; document.body.appendChild(a); a.click(); a.remove();
+          }}
+          className="bg-white text-brand-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg">
           Подключить группу →
-        </a>
+        </button>
+
+        <div className="mt-6 rounded-2xl bg-white/10 backdrop-blur p-6 text-left max-w-xl">
+          <p className="text-sm mb-3 opacity-95">
+            <b>Шаг 1.</b> Нажмите «Подключить группу» выше — откроется окно ВК. Нажмите «Разрешить».
+            <br /><b>Шаг 2.</b> Откроется белая страница с красным предупреждением — <b>это НОРМАЛЬНО!</b> Нажмите <b>Ctrl+A</b> и <b>Ctrl+C</b>. Вернитесь сюда и нажмите <b>Ctrl+V</b> в поле ниже — подключение произойдёт автоматически.
+          </p>
+          <div className="mb-2 flex items-center gap-2 text-xs opacity-90">
+            <kbd className="bg-white/20 px-2 py-0.5 rounded">Ctrl+A</kbd>
+            <span>затем</span>
+            <kbd className="bg-white/20 px-2 py-0.5 rounded">Ctrl+C</kbd>
+            <span>на белой странице →</span>
+            <kbd className="bg-white/20 px-2 py-0.5 rounded">Ctrl+V</kbd>
+            <span>сюда ↓</span>
+          </div>
+          <input type="text" value={tokenInput} onChange={(e) => setTokenInput(e.target.value)}
+            placeholder="Вставьте адресную строку белой страницы (Ctrl+V)"
+            className="w-full rounded-xl border-0 bg-white/95 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white" />
+          {error && <p className="mt-2 text-sm text-yellow-200">{error}</p>}
+          <p className="mt-3 text-xs opacity-75">
+            ВК предупредит «не копируйте токен» — это предупреждение для чужих сайтов. Вы отдаёте токен СВОЕМУ сервису Нейро-Мастер: он будет постить только в ВАШУ группу. Отменить доступ можно в любой момент в настройках ВК.
+          </p>
+        </div>
       </div>
 
-      {/* Как это работает */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
-            <span className="text-2xl">🔗</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
           </div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Подключите группу</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            Нажмите кнопку и разрешите доступ к вашей группе ВК. Никаких паролей!
-          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Разрешите доступ в окне ВК и вставьте адресную строку. Никаких паролей!</p>
         </div>
-
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center mb-4">
-            <span className="text-2xl">🎯</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth="2" /><circle cx="12" cy="12" r="5" strokeWidth="2" /><circle cx="12" cy="12" r="1.5" strokeWidth="2" fill="currentColor" stroke="none" /></svg>
           </div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Выберите темы</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            Укажите группы-доноры, свои темы или доверьте ИИ придумывать темы самому
-          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Укажите группы-доноры, свои темы или доверьте ИИ придумывать темы самому</p>
         </div>
-
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-4">
-            <span className="text-2xl">🚀</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">ИИ генерирует и постит</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            Каждый день в указанное время появляется новый пост с уникальной картинкой
-          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Каждый день в указанное время появляется новый пост с уникальной картинкой</p>
         </div>
       </div>
 
-      {/* Тарифы */}
       <div className="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Тарифы</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 hover:border-brand-500 dark:hover:border-brand-500 transition-all duration-200">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Старт</h3>
-            <div className="text-3xl font-bold text-brand-600 dark:text-brand-400 mb-4">
-              900₽<span className="text-sm text-gray-500 font-normal">/мес</span>
+          {[
+            { name: "Старт", price: "900₽", posts: "30 постов в месяц", extra: ["Уникальные картинки ИИ", "Расписание по вашему выбору", "Группы-доноры для тем"] },
+            { name: "Бизнес", price: "1 500₽", posts: "60 постов в месяц", extra: ["Уникальные картинки ИИ", "Тексты к постам (ИИ)", "Приоритетная поддержка"], featured: true },
+            { name: "Премиум", price: "2 500₽", posts: "90 постов в месяц", extra: ["Уникальные картинки ИИ", "Тексты + темы от ИИ", "Персональный менеджер"] },
+          ].map((plan) => (
+            <div key={plan.name} className={`rounded-xl border-2 p-6 transition-all duration-200 ${plan.featured ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-lg" : "border-gray-200 dark:border-gray-700 hover:border-brand-500"}`}>
+              {plan.featured && <div className="text-xs font-bold text-brand-600 dark:text-brand-400 uppercase mb-2">Популярный</div>}
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
+              <div className="text-3xl font-bold text-brand-600 dark:text-brand-400 mb-4">{plan.price}<span className="text-sm text-gray-500 font-normal">/мес</span></div>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-start text-sm text-gray-700 dark:text-gray-300"><span className="text-green-500 mr-2">✓</span> {plan.posts}</li>
+                {plan.extra.map((f) => (<li key={f} className="flex items-start text-sm text-gray-700 dark:text-gray-300"><span className="text-green-500 mr-2">✓</span> {f}</li>))}
+              </ul>
             </div>
-            <ul className="space-y-2 mb-6">
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> 30 постов в месяц
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Уникальные картинки ИИ
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Расписание по вашему выбору
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Группы-доноры для тем
-              </li>
-            </ul>
-            <a
-              href={oauthUrl}
-              className="block w-full text-center bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors"
-            >
-              Выбрать
-            </a>
-          </div>
-
-          <div className="rounded-xl border-2 border-brand-500 p-6 bg-brand-50 dark:bg-brand-900/20 shadow-lg scale-105">
-            <div className="text-xs font-bold text-brand-600 dark:text-brand-400 uppercase mb-2">Популярный</div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Бизнес</h3>
-            <div className="text-3xl font-bold text-brand-600 dark:text-brand-400 mb-4">
-              1 500₽<span className="text-sm text-gray-500 font-normal">/мес</span>
-            </div>
-            <ul className="space-y-2 mb-6">
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> 60 постов в месяц
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Уникальные картинки ИИ
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Тексты к постам (ИИ)
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Приоритетная поддержка
-              </li>
-            </ul>
-            <a
-              href={oauthUrl}
-              className="block w-full text-center bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors"
-            >
-              Выбрать
-            </a>
-          </div>
-
-          <div className="rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 hover:border-brand-500 dark:hover:border-brand-500 transition-all duration-200">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Премиум</h3>
-            <div className="text-3xl font-bold text-brand-600 dark:text-brand-400 mb-4">
-              2 500₽<span className="text-sm text-gray-500 font-normal">/мес</span>
-            </div>
-            <ul className="space-y-2 mb-6">
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> 90 постов в месяц
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Уникальные картинки ИИ
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Тексты + темы от ИИ
-              </li>
-              <li className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                <span className="text-green-500 mr-2">✓</span> Персональный менеджер
-              </li>
-            </ul>
-            <a
-              href={oauthUrl}
-              className="block w-full text-center bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors"
-            >
-              Выбрать
-            </a>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* FAQ */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Частые вопросы</h2>
-        
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Частые вопросы</h2>
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
           <h4 className="text-base font-bold text-brand-600 dark:text-brand-400 mb-2">Как подключается группа?</h4>
-          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            Вы нажимаете «Подключить группу» и разрешаете доступ в окне ВК. Мы не видим ваш пароль — только токен для публикации постов.
-          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">Вы разрешаете доступ в окне ВК и вставляете адресную строку в поле. Мы не видим ваш пароль — только токен для публикации постов.</p>
         </div>
-
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-          <h4 className="text-base font-bold text-brand-600 dark:text-brand-400 mb-2">Откуда берутся темы для постов?</h4>
-          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            Три варианта: вы указываете группы-доноры (мы берём промпты оттуда), пишете свои темы вручную, или ИИ сам придумывает темы под вашу нишу.
-          </p>
+          <h4 className="text-base font-bold text-brand-600 dark:text-brand-400 mb-2">Можно ли приостановить?</h4>
+          <p className="text-sm text-gray-700 dark:text-gray-300">Да, в любой момент в личном кабинете. Неиспользованные посты переносятся на следующий месяц.</p>
         </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-          <h4 className="text-base font-bold text-brand-600 dark:text-brand-400 mb-2">Можно ли приостановить автопостинг?</h4>
-          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            Да, в любой момент в личном кабинете. Неиспользованные посты переносятся на следующий месяц.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-          <h4 className="text-base font-bold text-brand-600 dark:text-brand-400 mb-2">А если картинки будут плохие?</h4>
-          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            Мы используем передовые модели ИИ (GPT-Image, Seedream). Если картинка не понравится — можете отменить пост до публикации.
-          </p>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 p-8 text-white text-center shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">Готовы автоматизировать контент?</h2>
-        <p className="text-lg mb-6 opacity-95">Начните автопостинг за 900₽ в месяц</p>
-        <a
-          href={oauthUrl}
-          className="inline-block bg-white text-brand-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg"
-        >
-          Подключить группу →
-        </a>
       </div>
     </div>
   );
