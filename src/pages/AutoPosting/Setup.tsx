@@ -174,6 +174,8 @@ const Setup = () => {
           className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 mb-4" />
         {!mirror && (
           <div>
+        {!mirror && (
+          <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сколько постов в день?</label>
         <div className="flex items-center gap-4 mb-4">
           <button onClick={() => setPostsPerDay(Math.max(1, postsPerDay - 1))}
@@ -182,6 +184,8 @@ const Setup = () => {
           <button onClick={() => setPostsPerDay(Math.min(10, postsPerDay + 1))}
             className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200">+</button>
         </div>
+          </div>
+        )}
 
         {sourceType === "donor" && (
           <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 cursor-pointer mb-4">
