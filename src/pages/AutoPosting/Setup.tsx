@@ -189,12 +189,13 @@ const Setup = () => {
           <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 cursor-pointer mb-4">
             <input type="checkbox" checked={mirror} onChange={(e) => setMirror(e.target.checked)} className="w-5 h-5 text-brand-600" />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              <b>Зеркальный режим:</b> пост выходит у клиента сразу, как только появился у донора
+              <b>🪞 Зеркальный режим:</b> пост выходит у вас сразу, как только появится у донора. Только новые посты — старые и закреплённые не берутся. Реклама донора фильтруется. Если донор не постит — и у вас нет поста.
             </span>
           </label>
         )}
 
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Время публикаций (система распределит автоматически):</label>
+        <p className="text-xs text-gray-500 mb-3">💡 Если к указанному времени свежих постов нет — пост будет пропущен. Повторов не будет.</p>
         <div className="flex gap-2 flex-wrap">
           {times.map((t) => (
             <span key={t} className="px-4 py-2 rounded-lg text-sm font-semibold bg-brand-500 text-white">{t}</span>
