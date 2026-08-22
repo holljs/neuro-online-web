@@ -3,7 +3,35 @@ import { useSearchParams } from "react-router";
 
 const Setup = () => {
   const [searchParams] = useSearchParams();
-  const clientId = searchParams.get("client_id");
+  const [clientIdState, setClientIdState] = useState<string | null>(
+    searchParams.get("client_id")
+  );
+  const clientId = clientIdState;
+
+  // Если client_id нет в URL — получаем свой через VK API
+  useEffect(() => {
+    if (clientIdState) return;
+    
+    // Пробуем получить user_id из URL или localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    let userId = urlParams.get("vk_user_id") || urlParams.get("user_id");
+    if (!userId) {
+      userId = localStorage.getItem("vk_user_id") || localStorage.getItem("user_id");
+    }
+    if (!userId) return;
+
+    fetch(`/api/autoposter/my?user_id=${userId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.status === "connected" && data.client_id) {
+          console.log("✅ Auto client_id from /my:", data.client_id);
+          setClientIdState(String(data.client_id));
+        } else {
+          console.error("❌ Нет подключённого Криэйтора для user_id:", userId);
+        }
+      })
+      .catch((err) => console.error("❌ /my error:", err));
+  }, [clientIdState]);
 
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
