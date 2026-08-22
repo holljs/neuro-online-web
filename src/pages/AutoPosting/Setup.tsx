@@ -139,6 +139,26 @@ const Setup = () => {
         </div>
       )}
 
+      {/* ⚡ КНОПКА: ОПУБЛИКОВАТЬ СЕЙЧАС */}
+      {myStatus?.tariff === 'demo' && (
+        <div className="mb-4">
+          <button
+            onClick={async () => {
+              const res = await fetch("/api/autoposter/publish_now", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ client_id: clientId })
+              });
+              const data = await res.json();
+              alert(data.ok ? data.message : data.error);
+            }}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-base hover:opacity-90 transition-all"
+          >
+            ⚡ Опубликовать первый пост СЕЙЧАС
+          </button>
+        </div>
+      )}
+
       {/* ШАГ 2: КОНТЕНТ */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <h2 className={stepTitle}><span className={stepNum}>2</span> Откуда берём идеи постов?</h2>
