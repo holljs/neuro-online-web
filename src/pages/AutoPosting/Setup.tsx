@@ -161,40 +161,42 @@ const Setup = () => {
         </div>
       </div>
 
-      {/* 🎁 БАННЕР: ПЕРВЫЙ ПОСТ БЕСПЛАТНО */}
+      {/* ДЕМО: первый пост бесплатно */}
       {client?.tariff === 'demo' && (
-        <div className="rounded-2xl border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-5 flex items-start gap-3 mb-4">
-          <span className="text-3xl">🎁</span>
+        <div className="rounded-2xl border border-brand-500 bg-brand-50 dark:bg-brand-900/20 p-5 flex items-start gap-4 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z" />
+            </svg>
+          </div>
           <div>
-            <div className="font-bold text-green-800 dark:text-green-300 text-base mb-1">
-              Первый пост — БЕСПЛАТНО!
-            </div>
-            <div className="text-sm text-green-700 dark:text-green-400">
-              Настройте источник и расписание — через 15 минут ИИ опубликует первый пост в вашей группе.
-              Понравится? Оплатите и Криэйтор продолжит работать каждый день 🚀
+            <div className="font-bold text-gray-900 dark:text-white text-base mb-1">Первый пост — бесплатно</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Настройте источник и расписание — ИИ опубликует первый пост в вашей группе.
+              Понравится результат? Оплатите тариф, и Криэйтор продолжит работать каждый день.
             </div>
           </div>
         </div>
       )}
 
-      {/* ⚡ КНОПКА: ОПУБЛИКОВАТЬ СЕЙЧАС */}
       {client?.tariff === 'demo' && (
-        <div className="mb-4">
-          <button
-            onClick={async () => {
-              const res = await fetch("/api/autoposter/publish_now", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ client_id: clientId })
-              });
-              const data = await res.json();
-              alert(data.ok ? data.message : data.error);
-            }}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-base hover:opacity-90 transition-all"
-          >
-            ⚡ Опубликовать первый пост СЕЙЧАС
-          </button>
-        </div>
+        <button
+          onClick={async () => {
+            const res = await fetch("/api/autoposter/publish_now", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ client_id: clientId })
+            });
+            const data = await res.json();
+            alert(data.ok ? data.message : data.error);
+          }}
+          className="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-base transition-colors flex items-center justify-center gap-2 mb-4"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Опубликовать первый пост сейчас
+        </button>
       )}
 
       {/* ШАГ 2: КОНТЕНТ */}
