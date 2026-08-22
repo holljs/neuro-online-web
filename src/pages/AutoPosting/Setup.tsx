@@ -124,7 +124,7 @@ const Setup = () => {
       </div>
 
       {/* 🎁 БАННЕР: ПЕРВЫЙ ПОСТ БЕСПЛАТНО */}
-      {myStatus?.tariff === 'demo' && (
+      {client?.tariff === 'demo' && (
         <div className="rounded-2xl border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-5 flex items-start gap-3 mb-4">
           <span className="text-3xl">🎁</span>
           <div>
@@ -140,7 +140,7 @@ const Setup = () => {
       )}
 
       {/* ⚡ КНОПКА: ОПУБЛИКОВАТЬ СЕЙЧАС */}
-      {myStatus?.tariff === 'demo' && (
+      {client?.tariff === 'demo' && (
         <div className="mb-4">
           <button
             onClick={async () => {
