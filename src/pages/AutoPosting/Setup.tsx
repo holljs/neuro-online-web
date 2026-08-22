@@ -30,7 +30,16 @@ const Setup = () => {
     if (!clientId) return;
     fetch(`/api/autoposter/client/${clientId}`)
       .then((r) => r.json())
-      .then((data) => { if (data.ok) setClient(data.client); })
+      .then((data) => { 
+        console.log("📥 API response:", data);
+        if (data.ok) {
+          console.log("✅ Client loaded:", data.client?.id, "groups:", data.client?.groups?.length);
+          setClient(data.client);
+        } else {
+          console.error("❌ API error:", data.error);
+        }
+      })
+      .catch((err) => console.error("❌ Fetch error:", err))
       .finally(() => setLoading(false));
   }, [clientId]);
 
