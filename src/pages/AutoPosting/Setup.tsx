@@ -123,6 +123,22 @@ const Setup = () => {
         </div>
       </div>
 
+      {/* 🎁 БАННЕР: ПЕРВЫЙ ПОСТ БЕСПЛАТНО */}
+      {myStatus?.tariff === 'demo' && (
+        <div className="rounded-2xl border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-5 flex items-start gap-3 mb-4">
+          <span className="text-3xl">🎁</span>
+          <div>
+            <div className="font-bold text-green-800 dark:text-green-300 text-base mb-1">
+              Первый пост — БЕСПЛАТНО!
+            </div>
+            <div className="text-sm text-green-700 dark:text-green-400">
+              Настройте источник и расписание — через 15 минут ИИ опубликует первый пост в вашей группе.
+              Понравится? Оплатите и Криэйтор продолжит работать каждый день 🚀
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ШАГ 2: КОНТЕНТ */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <h2 className={stepTitle}><span className={stepNum}>2</span> Откуда берём идеи постов?</h2>
