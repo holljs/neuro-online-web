@@ -68,7 +68,7 @@ export default function Home() {
             </span>
           </div>
         </Link>
-        {/* Карточка 3: Нейро-редактор */}
+        {/* Карточка 3: Нейро-Криэйтор */}
         <Link
           to="/auto-posting"
           className="group rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm hover:border-brand-500 dark:hover:border-brand-500 transition-all duration-200 flex flex-col justify-between"
@@ -81,7 +81,7 @@ export default function Home() {
             </div>
             <div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                Нейро-редактор
+                Нейро-Криэйтор
               </h3>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
                 ИИ сам создаёт картинки и публикует их в вашу группу ВК по расписанию. Вы спите — контент идёт!

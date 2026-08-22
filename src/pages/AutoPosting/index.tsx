@@ -14,7 +14,7 @@ const AutoPosting = () => {
   const getUserId = () => localStorage.getItem("vk_user_id") || localStorage.getItem("user_id");
 
   useEffect(() => {
-    document.title = "Нейро-редактор в ВК — Нейро-Мастер";
+    document.title = "Нейро-Криэйтор — Нейро-Мастер";
     const uid = getUserId();
     if (!uid) { setChecking(false); return; }
     fetch(`/api/autoposter/my?user_id=${uid}`)
@@ -126,7 +126,7 @@ const AutoPosting = () => {
 
         <button onClick={() => navigate(`/autoposter/setup?client_id=${myStatus.client_id}`)}
           className="w-full bg-brand-500 text-white py-5 rounded-2xl font-bold text-lg hover:bg-brand-600 transition-colors shadow-lg">
-          ⚙️ Настроить нейро-редактор →
+          ⚙️ Настроить Нейро-Криэйтор →
         </button>
 
         <details className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
@@ -134,7 +134,7 @@ const AutoPosting = () => {
             Подключить новый аккаунт ВК
           </summary>
           <div className="mt-4 p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-gray-700 dark:text-gray-300">
-            ⚠️ <b>Внимание:</b> при повторной авторизации старый токен перестанет работать. Используйте это только если хотите подключить нейро-редактор с другого аккаунта ВК. Для добавления ещё одной группы в текущий аккаунт — просто нажмите «Настроить нейро-редактор» выше (все ваши группы уже там).
+            ⚠️ <b>Внимание:</b> при повторной авторизации старый токен перестанет работать. Используйте это только если хотите подключить Нейро-Криэйтор с другого аккаунта ВК. Для добавления ещё одной группы в текущий аккаунт — просто нажмите «Настроить Нейро-Криэйтор» выше (все ваши группы уже там).
           </div>
           <button onClick={() => {
             const a = document.createElement("a"); a.href = OAUTH_URL; a.target = "_blank";
@@ -160,7 +160,7 @@ const AutoPosting = () => {
               <path strokeLinecap="round" strokeWidth="2" d="M9.5 13v2M14.5 13v2" />
             </svg>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold">Нейро-редактор в ВК</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold">Нейро-Криэйтор</h1>
         </div>
         <p className="text-lg opacity-95 mb-6 leading-relaxed">
           ИИ сам создаёт уникальные картинки и публикует их в вашу группу по расписанию.

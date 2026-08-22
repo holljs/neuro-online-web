@@ -108,7 +108,7 @@ const Setup = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Настройка автопостинга</h1>
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Настройка Нейро-Криэйтор</h1>
 
       {/* ШАГ 1: ГРУППА */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
