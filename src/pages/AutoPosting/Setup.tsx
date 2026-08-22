@@ -23,7 +23,8 @@ const Setup = () => {
     fetch(`/api/autoposter/my?user_id=${userId}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data.status === "connected" && data.client_id) {
+        console.log("📥 /my response:", data);
+        if (data.client_id) {
           console.log("✅ Auto client_id from /my:", data.client_id);
           setClientIdState(String(data.client_id));
         } else {
