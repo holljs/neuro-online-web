@@ -49,9 +49,26 @@ export default function HistoryPage() {
       const data = await res.json();
 
       if (data.success && data.items) {
+        // Маппинг model -> красивое имя
+        const MODEL_NAMES: Record<string, string> = {
+          "vip_mix": "🎯 Реал-Фото",
+          "seadream_mix": "📢 Пиар-Фото",
+          "ultra_photo": "✨ Ультра-Реал",
+          "t2i": "🎨 Текст → Картинка",
+          "gfpgan": "🖼️ Реставрация",
+          "quick_edit": "⚡ Быстрая правка",
+          "vip_edit": "💎 Люкс-Редактор",
+          "i2v": "🎬 Фото → Видео",
+          "t2v": "🎥 Текст → Видео",
+          "bytedance_5": "📹 Видео 5с",
+          "bytedance_10": "📹 Видео 10с",
+          "music": "🎵 Музыка",
+          "tts": "🗣️ Озвучка",
+        };
+        
         const formattedItems: HistoryItem[] = data.items.map((item: any) => ({
           id: String(item.id),
-          modeName: item.model || "Генерация",
+          modeName: MODEL_NAMES[item.model] || item.model || "Генерация",
           prompt: item.prompt || "Без текста",
           date: item.created_at ? new Date(item.created_at).toLocaleDateString("ru-RU") : "Недавно",
           resultUrl: item.result_url
