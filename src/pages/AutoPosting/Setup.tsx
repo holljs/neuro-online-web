@@ -161,44 +161,6 @@ const Setup = () => {
         </div>
       </div>
 
-      {/* ДЕМО: первый пост бесплатно */}
-      {client?.tariff === 'demo' && (
-        <div className="rounded-2xl border border-brand-500 bg-brand-50 dark:bg-brand-900/20 p-5 flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z" />
-            </svg>
-          </div>
-          <div>
-            <div className="font-bold text-gray-900 dark:text-white text-base mb-1">Первый пост — бесплатно</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Настройте источник и расписание — ИИ опубликует первый пост в вашей группе.
-              Понравится результат? Оплатите тариф, и Криэйтор продолжит работать каждый день.
-            </div>
-          </div>
-        </div>
-      )}
-
-      {client?.tariff === 'demo' && (
-        <button
-          onClick={async () => {
-            const res = await fetch("/api/autoposter/publish_now", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ client_id: clientId })
-            });
-            const data = await res.json();
-            alert(data.ok ? data.message : data.error);
-          }}
-          className="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-base transition-colors flex items-center justify-center gap-2 mb-4"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Опубликовать первый пост сейчас
-        </button>
-      )}
-
       {/* ШАГ 2: КОНТЕНТ */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
         <h2 className={stepTitle}><span className={stepNum}>2</span> Откуда берём идеи постов?</h2>
@@ -279,6 +241,65 @@ const Setup = () => {
         </div>
         <p className="mt-2 text-xs text-gray-400">Время распределяется равномерно в течение дня и сохраняется. Изменить можно в любой момент в личном кабинете.</p>
       </div>
+
+      {/* ДЕМО: первый пост бесплатно */}
+      {client?.tariff === 'demo' && (
+        <div className="rounded-2xl border border-brand-500 bg-brand-50 dark:bg-brand-900/20 p-5 flex items-start gap-4 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z" />
+            </svg>
+          </div>
+          <div>
+            <div className="font-bold text-gray-900 dark:text-white text-base mb-1">Первый пост — бесплатно</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Заполните шаги 1–3 и нажмите кнопку — настройка сохранится, и ИИ сразу опубликует первый пост.
+              Понравится результат? Оплатите тариф ниже, и Криэйтор продолжит работать каждый день.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {client?.tariff === 'demo' && (
+        <button
+          onClick={async () => {
+            const err = validate();
+            if (err) { alert(err); return; }
+            setSaving(true);
+            try {
+              const res = await fetch("/api/autoposter/setup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  client_id: clientId,
+                  group_id: selectedGroup,
+                  source_type: sourceType,
+                  donors, themes, description, signature,
+                  schedule, tariff,
+                }),
+              });
+              const data = await res.json();
+              if (!data.ok) { alert(data.error || "Ошибка сохранения"); return; }
+              const res2 = await fetch("/api/autoposter/publish_now", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ client_id: clientId }),
+              });
+              const data2 = await res2.json();
+              alert(data2.ok ? "Настройка сохранена! " + data2.message : data2.error);
+            } finally {
+              setSaving(false);
+            }
+          }}
+          disabled={saving}
+          className="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-base transition-colors flex items-center justify-center gap-2 mb-4"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          {saving ? "Сохраняем и публикуем..." : "Сохранить и опубликовать первый пост"}
+        </button>
+      )}
 
       {/* ШАГ 4: ТАРИФ */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
