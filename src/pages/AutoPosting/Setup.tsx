@@ -81,6 +81,99 @@ const Setup = () => {
       .finally(() => setLoading(false));
   }, [clientId]);
 
+  // 🎨 ГАЛЕРЕЯ ГОТОВЫХ СТИЛЕЙ
+  const stylePresets = [
+    {
+      name: "Пиццерия",
+      emoji: "🍕",
+      type: "food" as const,
+      refs: [
+        "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800",
+        "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800",
+        "https://images.unsplash.com/photo-1513104890138-7c749659a76d?w=800"
+      ]
+    },
+    {
+      name: "Кофейня",
+      emoji: "☕",
+      type: "food" as const,
+      refs: [
+        "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800",
+        "https://images.unsplash.com/photo-1511925385224-e3a924337419?w=800",
+        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800"
+      ]
+    },
+    {
+      name: "Магазин одежды",
+      emoji: "👗",
+      type: "product" as const,
+      refs: [
+        "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+        "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800",
+        "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800"
+      ]
+    },
+    {
+      name: "Салон красоты",
+      emoji: "💅",
+      type: "service" as const,
+      refs: [
+        "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800",
+        "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800",
+        "https://images.unsplash.com/photo-1595476193005-62a62c7091e0?w=800"
+      ]
+    },
+    {
+      name: "Фитнес-клуб",
+      emoji: "💪",
+      type: "service" as const,
+      refs: [
+        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+        "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800",
+        "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800"
+      ]
+    }
+  ];
+
+  const applyStylePreset = async (preset: typeof stylePresets[0]) => {
+    if (!canChangeRefs) {
+      alert(`Менять стили можно раз в 7 дней. Осталось ${daysUntilChange} дн.`);
+      return;
+    }
+    if (!confirm(`Применить стиль "${preset.name}"? Будут загружены ${preset.refs.length} референса.`)) return;
+    
+    setUploading(true);
+    setRefType(preset.type);
+    try {
+      // Удаляем старые референсы если есть
+      for (let i = references.length - 1; i >= 0; i--) {
+        await fetch("/api/autoposter/remove_reference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_id: clientId, index: i }),
+        });
+      }
+      // Загружаем новые
+      let newRefs: any[] = [];
+      for (const url of preset.refs) {
+        const res = await fetch("/api/autoposter/add_reference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_id: clientId, image_url: url, ref_type: preset.type }),
+        });
+        const data = await res.json();
+        if (data.ok) newRefs = data.references;
+      }
+      setReferences(newRefs);
+      if (client) setClient({ ...client, last_refs_update: new Date().toISOString() });
+      alert(`✅ Стиль "${preset.name}" применён!`);
+    } catch (e) {
+      alert("Ошибка: " + e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const uploadRef = async (file: File) => {
     setUploading(true);
     const fd = new FormData();
@@ -318,14 +411,24 @@ const Setup = () => {
       {/* ШАГ 2.5: РЕФЕРЕНСЫ */}
       {client?.tariff !== "demo" && (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 mb-4">
-          <h2 className={stepTitle}>
-            <span className={stepNum}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </span>
-            Визуальный стиль ваших постов
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className={stepTitle}>
+              <span className={stepNum}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              Визуальный стиль ваших постов
+            </h2>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="font-semibold text-brand-600">{references.length}</span>
+              <span className="mx-1">/</span>
+              <span>{tariff === "premium" ? 10 : tariff === "business" ? 7 : 5}</span>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Загрузите фото ваших товаров — ИИ будет генерировать посты с вашими товарами в новых сценах.
+          </p>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Загрузите фото ваших товаров или интерьера. ИИ будет генерировать посты с вашими товарами в новых красивых сценах.
           </p>
@@ -351,15 +454,98 @@ const Setup = () => {
             ))}
           </div>
 
+          {/* 🎨 ГАЛЕРЕЯ ГОТОВЫХ СТИЛЕЙ */}
+          {canChangeRefs && references.length === 0 && (
+            <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800">
+              <div className="font-semibold text-gray-900 dark:text-white text-sm mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                Готовые стили — примените одним кликом
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                {stylePresets.map((preset, i) => (
+                  <button
+                    key={i}
+                    onClick={() => applyStylePreset(preset)}
+                    disabled={uploading}
+                    className="p-3 rounded-lg bg-white dark:bg-gray-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 border border-gray-200 dark:border-gray-700 hover:border-brand-500 transition-all text-left disabled:opacity-50"
+                  >
+                    <div className="text-2xl mb-1">{preset.emoji}</div>
+                    <div className="font-medium text-sm text-gray-900 dark:text-white">{preset.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{preset.refs.length} референса</div>
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 mt-2">Или загрузите свои фото ниже</div>
+            </div>
+          )}
+
           {/* Список референсов */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             {references.map((ref, i) => (
-              <div key={i} className="relative group rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 aspect-square">
-                <img src={ref.url} alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-xs">
-                  <div className="truncate">{ref.description?.slice(0, 40) || "Референс"}</div>
-                  <div className="opacity-75 text-[10px]">использован: {ref.used || 0} раз</div>
+              <div key={i} className="relative group rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-brand-500 transition-all">
+                <div className="aspect-square relative">
+                  <img src={ref.url} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  {ref.keep_original && (
+                    <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                      КАК ЕСТЬ
+                    </div>
+                  )}
+                  {!ref.keep_original && (
+                    <div className="absolute top-2 left-2 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                      </svg>
+                      НОВАЯ СЦЕНА
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => toggleRef(i)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
+                        ref.keep_original ? "bg-green-500 hover:bg-green-600 text-white" : "bg-white/90 hover:bg-white text-gray-700"
+                      }`}
+                      title={ref.keep_original ? "Сейчас: оставить как есть. Клик — переключить на новую сцену" : "Сейчас: новая сцена. Клик — оставить как есть"}
+                    >
+                      {ref.keep_original ? (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => removeRef(i)}
+                      className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg"
+                      title="Удалить референс"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {/* Описание и счётчик */}
+                <div className="p-3 bg-gray-50 dark:bg-gray-800/50">
+                  <div className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 min-h-[2.5rem] mb-2" title={ref.description}>
+                    {ref.description || "Описание будет добавлено..."}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span>Использован: <b className="text-brand-600 dark:text-brand-400">{ref.used || 0}</b> раз</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
@@ -404,19 +590,45 @@ const Setup = () => {
           </div>
 
           {/* Информация и ограничения */}
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-xs text-gray-700 dark:text-gray-300">
-            <svg className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <div className="mb-1"><b>🔒 "Оставить как есть"</b> — ИИ улучшит качество/освещение, но товар останется точно таким же.</div>
-              <div className="mb-1"><b>🎨 "Новая сцена"</b> — ИИ поместит ваш товар в новую красивую обстановку (ресторан, студия и т.д.).</div>
-              {!canChangeRefs && (
-                <div className="mt-2 text-orange-600 dark:text-orange-400 font-medium">
-                  ⏰ Менять референсы можно 1 раз в 7 дней. Следующая смена через {daysUntilChange} дн.
-                  {tariff !== "premium" && <span className="block">💎 На Премиум — без ограничений.</span>}
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-xs text-gray-700 dark:text-gray-300">
+              <svg className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <div className="mb-1"><b>Режим "КАК ЕСТЬ"</b> — ИИ улучшит качество/освещение, но товар останется точно таким же. Идеально для карточек товаров.</div>
+                <div className="mb-1"><b>Режим "НОВАЯ СЦЕНА"</b> — ИИ поместит ваш товар в новую красивую обстановку. Идеально для вдохновляющих постов.</div>
+                <div>Переключайте режим на каждом референсе индивидуально (кнопка в углу).</div>
+              </div>
+            </div>
+            
+            {/* Блокировка смены + прогресс использования */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className={`p-3 rounded-lg text-xs ${!canChangeRefs ? "bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300" : "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300"}`}>
+                <div className="flex items-center gap-2 font-semibold mb-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {canChangeRefs ? "Можно менять стили" : "Смена стилей заблокирована"}
                 </div>
-              )}
+                {!canChangeRefs ? (
+                  <div>Следующая смена через <b>{daysUntilChange} дн.</b>
+                    {tariff !== "premium" && <span className="block mt-0.5 opacity-80">💎 Премиум — без ограничений</span>}
+                  </div>
+                ) : (
+                  <div>Загружайте и удаляйте референсы когда угодно</div>
+                )}
+              </div>
+              
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-700 dark:text-gray-300">
+                <div className="flex items-center gap-2 font-semibold mb-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Использование референсов
+                </div>
+                <div>ИИ берёт референсы по очереди (у кого меньше использований). Когда все будут использованы — цикл начнётся заново.</div>
+              </div>
             </div>
           </div>
         </div>
