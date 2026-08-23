@@ -438,9 +438,6 @@ const Setup = () => {
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Загрузите фото ваших товаров — ИИ будет генерировать посты с вашими товарами в новых сценах.
-          </p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Загрузите фото ваших товаров или интерьера. ИИ будет генерировать посты с вашими товарами в новых красивых сценах.
           </p>
 
@@ -502,75 +499,30 @@ const Setup = () => {
           {/* Список референсов */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             {references.map((ref, i) => (
-              <div key={i} className="relative group rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-brand-500 transition-all">
+              <div key={i} className="relative rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-brand-500 transition-all">
                 <div className="aspect-square relative">
                   <img src={ref.url} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  {refMode === 'keep' && (
-                    <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                      </svg>
-                      КАК ЕСТЬ
-                    </div>
-                  )}
-                  {refMode !== 'keep' && (
-                    <div className="absolute top-2 left-2 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                      </svg>
-                      НОВАЯ СЦЕНА
-                    </div>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <button
-                      onClick={() => removeRef(i)}
-                      className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg"
-                      title="Удалить референс (можно в любой момент)"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => removeRef(i)}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg"
+                    title="Удалить референс (можно в любой момент)"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
-                {/* Описание и счётчик */}
                 <div className="p-3 bg-gray-50 dark:bg-gray-800/50">
                   <div className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 min-h-[2.5rem] mb-2" title={ref.description}>
                     {ref.description || "Описание будет добавлено..."}
                   </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      <span>Использован: <b className="text-brand-600 dark:text-brand-400">{ref.used || 0}</b> раз</span>
-                    </div>
+                  <div className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Использован: <b className="text-brand-600 dark:text-brand-400">{ref.used || 0}</b> раз</span>
                   </div>
                 </div>
-                <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => toggleRef(i)}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                      ref.keep_original ? "bg-green-500 text-white" : "bg-white/90 text-gray-700"
-                    }`}
-                    title={ref.keep_original ? "Оставить как есть (ON)" : "Новая сцена (OFF)"}
-                  >
-                    {ref.keep_original ? "🔒" : "🎨"}
-                  </button>
-                  <button
-                    onClick={() => removeRef(i)}
-                    className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold hover:bg-red-600"
-                    title="Удалить"
-                  >
-                    ×
-                  </button>
-                </div>
-                {refMode === 'keep' && (
-                  <div className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                    КАК ЕСТЬ
-                  </div>
-                )}
               </div>
             ))}
             {canChangeRefs && references.length < (tariff === "premium" ? 10 : tariff === "business" ? 7 : 5) && (
