@@ -54,7 +54,7 @@ const Setup = () => {
   });
   const schedule = JSON.stringify({ per_day: postsPerDay, times, mirror });
   const [tariff, setTariff] = useState("start");
-  const [refType, setRefType] = useState<"food" | "product" | "service">("product");
+  const [refMode, setRefMode] = useState<string>("product");
   const [references, setReferences] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -71,7 +71,7 @@ const Setup = () => {
           if (cfg) {
             const parsed = typeof cfg === "string" ? JSON.parse(cfg) : cfg;
             setReferences(parsed.references || []);
-            if (parsed.reference_type) setRefType(parsed.reference_type);
+            if (parsed.reference_mode) setRefMode(parsed.reference_mode); else if (parsed.reference_type) setRefMode(parsed.reference_type);
           }
         } else {
           console.error("❌ API error:", data.error);
@@ -143,7 +143,7 @@ const Setup = () => {
     if (!confirm(`Применить стиль "${preset.name}"? Будут загружены ${preset.refs.length} референса.`)) return;
     
     setUploading(true);
-    setRefType(preset.type);
+    setRefMode(preset.type);
     try {
       // Удаляем старые референсы если есть
       for (let i = references.length - 1; i >= 0; i--) {
@@ -221,6 +221,17 @@ const Setup = () => {
     const data = await res.json();
     if (data.ok) setReferences(data.references);
     else alert(data.error);
+  };
+
+  const setMode = async (mode: string) => {
+    setRefMode(mode);
+    try {
+      await fetch("/api/autoposter/set_reference_mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: clientId, mode }),
+      });
+    } catch (e) { console.error(e); }
   };
 
   const canChangeRefs = (() => {
@@ -433,25 +444,32 @@ const Setup = () => {
             Загрузите фото ваших товаров или интерьера. ИИ будет генерировать посты с вашими товарами в новых красивых сценах.
           </p>
 
-          {/* Тип бизнеса */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          {/* Режим генерации — 4 понятные кнопки */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
             {[
-              { id: "food", label: "Еда и напитки" },
-              { id: "product", label: "Товары" },
-              { id: "service", label: "Услуги" }
+              { id: "keep", label: "Как есть", hint: "Товар останется точно как на фото, ИИ только улучшит качество" },
+              { id: "food", label: "Еда", hint: "Блюда в новых аппетитных сценах" },
+              { id: "product", label: "Товары", hint: "Товары в новых студийных сценах" },
+              { id: "service", label: "Услуги", hint: "Интерьер и атмосфера в новых сценах" }
             ].map(t => (
               <button
                 key={t.id}
-                onClick={() => setRefType(t.id as any)}
-                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  refType === t.id
-                    ? "bg-brand-600 text-white"
+                onClick={() => setMode(t.id)}
+                title={t.hint}
+                className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                  refMode === t.id
+                    ? "bg-brand-600 text-white shadow-md"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200"
                 }`}
               >
                 {t.label}
               </button>
             ))}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-4 -mt-2">
+            {refMode === "keep"
+              ? "Режим «Как есть»: карточки товаров останутся точь-в-точь как на ваших фото."
+              : "Режим «Новые сцены»: ИИ будет показывать ваши товары в новых красивых обстановках."}
           </div>
 
           {/* 🎨 ГАЛЕРЕЯ ГОТОВЫХ СТИЛЕЙ */}
@@ -488,7 +506,7 @@ const Setup = () => {
                 <div className="aspect-square relative">
                   <img src={ref.url} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  {ref.keep_original && (
+                  {refMode === 'keep' && (
                     <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -496,7 +514,7 @@ const Setup = () => {
                       КАК ЕСТЬ
                     </div>
                   )}
-                  {!ref.keep_original && (
+                  {refMode !== 'keep' && (
                     <div className="absolute top-2 left-2 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
@@ -504,28 +522,11 @@ const Setup = () => {
                       НОВАЯ СЦЕНА
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => toggleRef(i)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-                        ref.keep_original ? "bg-green-500 hover:bg-green-600 text-white" : "bg-white/90 hover:bg-white text-gray-700"
-                      }`}
-                      title={ref.keep_original ? "Сейчас: оставить как есть. Клик — переключить на новую сцену" : "Сейчас: новая сцена. Клик — оставить как есть"}
-                    >
-                      {ref.keep_original ? (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                        </svg>
-                      )}
-                    </button>
+                  <div className="absolute top-2 right-2">
                     <button
                       onClick={() => removeRef(i)}
                       className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg"
-                      title="Удалить референс"
+                      title="Удалить референс (можно в любой момент)"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -565,7 +566,7 @@ const Setup = () => {
                     ×
                   </button>
                 </div>
-                {ref.keep_original && (
+                {refMode === 'keep' && (
                   <div className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
                     КАК ЕСТЬ
                   </div>
@@ -596,9 +597,9 @@ const Setup = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <div className="mb-1"><b>Режим "КАК ЕСТЬ"</b> — ИИ улучшит качество/освещение, но товар останется точно таким же. Идеально для карточек товаров.</div>
-                <div className="mb-1"><b>Режим "НОВАЯ СЦЕНА"</b> — ИИ поместит ваш товар в новую красивую обстановку. Идеально для вдохновляющих постов.</div>
-                <div>Переключайте режим на каждом референсе индивидуально (кнопка в углу).</div>
+                <div className="mb-1"><b>«Как есть»</b> — карточки товаров точь-в-точь как на фото, ИИ только улучшит свет и качество.</div>
+                <div className="mb-1"><b>«Еда / Товары / Услуги»</b> — ИИ покажет ваши товары в новых красивых сценах.</div>
+                <div>Режим один для всех референсов — выбирается кнопками выше.</div>
               </div>
             </div>
             
@@ -609,14 +610,14 @@ const Setup = () => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {canChangeRefs ? "Можно менять стили" : "Смена стилей заблокирована"}
+                  {canChangeRefs ? "Можно добавлять стили" : "Добавление новых заблокировано"}
                 </div>
                 {!canChangeRefs ? (
-                  <div>Следующая смена через <b>{daysUntilChange} дн.</b>
+                  <div>Новые можно добавить через <b>{daysUntilChange} дн.</b> Удалять — можно всегда.
                     {tariff !== "premium" && <span className="block mt-0.5 opacity-80">💎 Премиум — без ограничений</span>}
                   </div>
                 ) : (
-                  <div>Загружайте и удаляйте референсы когда угодно</div>
+                  <div>Добавляйте новые референсы и готовые стили</div>
                 )}
               </div>
               
