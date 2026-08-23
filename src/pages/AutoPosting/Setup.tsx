@@ -54,6 +54,9 @@ const Setup = () => {
   });
   const schedule = JSON.stringify({ per_day: postsPerDay, times, mirror });
   const [tariff, setTariff] = useState("start");
+  const [refType, setRefType] = useState<"food" | "product" | "service">("product");
+  const [references, setReferences] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -64,6 +67,12 @@ const Setup = () => {
         if (data.ok) {
           console.log("✅ Client loaded:", data.client?.id, "groups:", data.client?.groups?.length);
           setClient(data.client);
+          const cfg = data.client?.source_config;
+          if (cfg) {
+            const parsed = typeof cfg === "string" ? JSON.parse(cfg) : cfg;
+            setReferences(parsed.references || []);
+            if (parsed.reference_type) setRefType(parsed.reference_type);
+          }
         } else {
           console.error("❌ API error:", data.error);
         }
@@ -71,6 +80,70 @@ const Setup = () => {
       .catch((err) => console.error("❌ Fetch error:", err))
       .finally(() => setLoading(false));
   }, [clientId]);
+
+  const uploadRef = async (file: File) => {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const upRes = await fetch("/api/upload", { method: "POST", body: fd });
+      const upData = await upRes.json();
+      if (!upData.ok) { alert(upData.error || "Ошибка загрузки"); return; }
+      const res = await fetch("/api/autoposter/add_reference", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: clientId, image_url: upData.url, ref_type: refType }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setReferences(data.references);
+        // Обновим last_refs_update в client
+        if (client) setClient({ ...client, last_refs_update: new Date().toISOString() });
+      } else {
+        alert(data.error || "Ошибка добавления референса");
+      }
+    } catch (e) {
+      alert("Ошибка: " + e);
+    } finally { setUploading(false); }
+  };
+
+  const removeRef = async (idx: number) => {
+    if (!confirm("Удалить референс?")) return;
+    const res = await fetch("/api/autoposter/remove_reference", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: clientId, index: idx }),
+    });
+    const data = await res.json();
+    if (data.ok) setReferences(data.references);
+    else alert(data.error);
+  };
+
+  const toggleRef = async (idx: number) => {
+    const res = await fetch("/api/autoposter/toggle_reference", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: clientId, index: idx }),
+    });
+    const data = await res.json();
+    if (data.ok) setReferences(data.references);
+    else alert(data.error);
+  };
+
+  const canChangeRefs = (() => {
+    if (tariff === "premium") return true;
+    if (!client?.last_refs_update) return true;
+    const last = new Date(client.last_refs_update);
+    const diff = (Date.now() - last.getTime()) / (1000 * 60 * 60 * 24);
+    return diff >= 7;
+  })();
+
+  const daysUntilChange = (() => {
+    if (tariff === "premium" || !client?.last_refs_update) return 0;
+    const last = new Date(client.last_refs_update);
+    const diff = 7 - (Date.now() - last.getTime()) / (1000 * 60 * 60 * 24);
+    return Math.max(0, Math.ceil(diff));
+  })();
 
   const validate = (): string | null => {
     if (!selectedGroup) return "Выберите группу (шаг 1)";
@@ -242,7 +315,114 @@ const Setup = () => {
         <p className="mt-2 text-xs text-gray-400">Время распределяется равномерно в течение дня и сохраняется. Изменить можно в любой момент в личном кабинете.</p>
       </div>
 
-      {/* ДЕМО: первый пост бесплатно */}
+      {/* ШАГ 2.5: РЕФЕРЕНСЫ */}
+      {client?.tariff !== "demo" && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 mb-4">
+          <h2 className={stepTitle}>
+            <span className={stepNum}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </span>
+            Визуальный стиль ваших постов
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Загрузите фото ваших товаров или интерьера. ИИ будет генерировать посты с вашими товарами в новых красивых сценах.
+          </p>
+
+          {/* Тип бизнеса */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {[
+              { id: "food", label: "Еда и напитки" },
+              { id: "product", label: "Товары" },
+              { id: "service", label: "Услуги" }
+            ].map(t => (
+              <button
+                key={t.id}
+                onClick={() => setRefType(t.id as any)}
+                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  refType === t.id
+                    ? "bg-brand-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Список референсов */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+            {references.map((ref, i) => (
+              <div key={i} className="relative group rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 aspect-square">
+                <img src={ref.url} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-xs">
+                  <div className="truncate">{ref.description?.slice(0, 40) || "Референс"}</div>
+                  <div className="opacity-75 text-[10px]">использован: {ref.used || 0} раз</div>
+                </div>
+                <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => toggleRef(i)}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                      ref.keep_original ? "bg-green-500 text-white" : "bg-white/90 text-gray-700"
+                    }`}
+                    title={ref.keep_original ? "Оставить как есть (ON)" : "Новая сцена (OFF)"}
+                  >
+                    {ref.keep_original ? "🔒" : "🎨"}
+                  </button>
+                  <button
+                    onClick={() => removeRef(i)}
+                    className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold hover:bg-red-600"
+                    title="Удалить"
+                  >
+                    ×
+                  </button>
+                </div>
+                {ref.keep_original && (
+                  <div className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                    КАК ЕСТЬ
+                  </div>
+                )}
+              </div>
+            ))}
+            {canChangeRefs && references.length < (tariff === "premium" ? 10 : tariff === "business" ? 7 : 5) && (
+              <label className="aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-all">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => e.target.files?.[0] && uploadRef(e.target.files[0])}
+                />
+                <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="text-xs text-gray-500">{uploading ? "Загрузка..." : "Добавить"}</span>
+              </label>
+            )}
+          </div>
+
+          {/* Информация и ограничения */}
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-xs text-gray-700 dark:text-gray-300">
+            <svg className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <div className="mb-1"><b>🔒 "Оставить как есть"</b> — ИИ улучшит качество/освещение, но товар останется точно таким же.</div>
+              <div className="mb-1"><b>🎨 "Новая сцена"</b> — ИИ поместит ваш товар в новую красивую обстановку (ресторан, студия и т.д.).</div>
+              {!canChangeRefs && (
+                <div className="mt-2 text-orange-600 dark:text-orange-400 font-medium">
+                  ⏰ Менять референсы можно 1 раз в 7 дней. Следующая смена через {daysUntilChange} дн.
+                  {tariff !== "premium" && <span className="block">💎 На Премиум — без ограничений.</span>}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ДЕМО: первый пост бесплатно */}      {/* ДЕМО: первый пост бесплатно */}
       {client?.tariff === 'demo' && (
         <div className="rounded-2xl border border-brand-500 bg-brand-50 dark:bg-brand-900/20 p-5 flex items-start gap-4 mb-4">
           <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
