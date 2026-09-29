@@ -25,6 +25,9 @@ import NeuroArtist from "./pages/NeuroArtist";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import Kids from "./pages/Kids"; // Детский центр
+import Malysh from "./pages/Kids/Malysh";
+import Genius from "./pages/Kids/Genius";
+import Repetitor from "./pages/Kids/Repetitor";
 import AutoPosting from "./pages/AutoPosting";
 import Success from "./pages/AutoPosting/Success";
 import Setup from "./pages/AutoPosting/Setup";
@@ -44,6 +47,9 @@ export default function App() {
             <Route path="/neuro-bro" element={<NeuroBro />} />
             <Route path="/neuro-artist" element={<NeuroArtist />} />
             <Route path="/kids" element={<Kids />} />
+            <Route path="/kids/malysh" element={<Malysh />} />
+            <Route path="/kids/genius" element={<Genius />} />
+            <Route path="/kids/repetitor" element={<Repetitor />} />
             <Route path="/auto-posting" element={<AutoPosting />} />
             <Route path="/autoposter/success" element={<Success />} />
             <Route path="/autoposter/setup" element={<Setup />} />

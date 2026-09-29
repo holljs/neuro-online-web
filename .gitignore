@@ -31,3 +31,14 @@ __pycache__/
 backups/
 *.backup
 *.bak
+
+# Рабочие данные и секреты
+.env
+.env.local
+*.db
+*.sqlite
+*.sqlite3
+media/
+uploads/
+dist/
+.DS_Store

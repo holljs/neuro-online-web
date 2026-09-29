@@ -99,14 +99,28 @@ export default function NeuroBro() {
   ];
 
   // Точечная прокрутка внутри блока чата
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({
-        top: chatContainerRef.current.scrollHeight,
-        behavior: "smooth",
+      // requestAnimationFrame ждёт рендера DOM
+      requestAnimationFrame(() => {
+        chatContainerRef.current?.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior,
+        });
       });
     }
   };
+
+  // 🎯 АВТОПРОКРУТКА при любом изменении messages
+  // - При загрузке истории → прокручивает к последнему сообщению
+  // - При отправке нового → прокручивает к нему
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Двойная задержка для надёжности (DOM + картинки)
+      setTimeout(() => scrollToBottom("auto"), 50);
+      setTimeout(() => scrollToBottom("smooth"), 300);
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (!userId) return;
@@ -168,11 +182,53 @@ export default function NeuroBro() {
     recognition.start();
   };
 
+  // 🔧 УНИВЕРСАЛЬНОЕ КОПИРОВАНИЕ (работает в VK iframe и старых браузерах)
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    // Способ 1: современный Clipboard API
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {
+      console.warn("Clipboard API failed:", e);
+    }
+    
+    // Способ 2: fallback через textarea + execCommand (работает в iframe!)
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.top = "-9999px";
+      textarea.style.left = "-9999px";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, 99999); // для мобильных
+      
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      
+      if (success) return true;
+    } catch (e) {
+      console.error("execCommand failed:", e);
+    }
+    
+    // Способ 3: если совсем ничего не работает — показываем текст
+    return false;
+  };
+
   // Копирование текста
-  const handleCopyText = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIdx(idx);
-    setTimeout(() => setCopiedIdx(null), 2000);
+  const handleCopyText = async (text: string, idx: number) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    } else {
+      // Если копирование не удалось — показываем модалку с текстом
+      alert("Не удалось скопировать автоматически. Выделите и скопируйте вручную:\n\n" + text.substring(0, 500));
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -367,16 +423,16 @@ export default function NeuroBro() {
 
                 <button
                   onClick={() => handleCopyText(msg.content, idx)}
-                  className={`absolute top-2 right-2 p-1 rounded transition opacity-0 group-hover:opacity-100 cursor-pointer ${
+                  className={`absolute top-2 right-2 p-2 md:p-1 rounded transition opacity-100 md:opacity-0 md:group-hover:opacity-100 cursor-pointer z-10 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center ${
                     msg.role === "user"
-                      ? "text-white/80 hover:text-white hover:bg-white/10"
-                      : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5"
+                      ? "text-white/80 hover:text-white bg-white/10 md:bg-transparent hover:bg-white/20"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100/50 dark:bg-gray-800/50 md:bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
                   title="Копировать"
                 >
                   {copiedIdx === idx ? (
                     <svg
-                      className="w-3.5 h-3.5 stroke-emerald-400 fill-none"
+                      className="w-5 h-5 md:w-3.5 md:h-3.5 stroke-emerald-400 fill-none"
                       viewBox="0 0 24 24"
                       strokeWidth="2.5"
                       strokeLinecap="round"

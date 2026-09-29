@@ -95,6 +95,32 @@ export default function Home() {
             </span>
           </div>
         </Link>
+
+        {/* Карточка 4: Детский центр */}
+        <Link
+          to="/kids"
+          className="group rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-200 flex flex-col justify-between"
+        >
+          <div className="space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <BoxCubeIcon className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-amber-600 dark:text-amber-400 transition-colors">
+                Детский центр
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+                Образовательные платформы для детей: Гений, Малыш и Репетитор.
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-400">Подарки в каждом приложении</span>
+            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform">
+              Открыть →
+            </span>
+          </div>
+        </Link>
       </div>
     </div>
   );

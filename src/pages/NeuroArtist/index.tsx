@@ -37,7 +37,7 @@ export default function NeuroArtist() {
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  // 🔥 НОВОЕ: БОНУС ЗА ПОДПИСКУ
+  //  НОВОЕ: БОНУС ЗА ПОДПИСКУ
   const [bonusClaimed, setBonusClaimed] = useState<boolean>(() => {
     const savedId = localStorage.getItem("user_id");
     if (savedId)
@@ -46,7 +46,7 @@ export default function NeuroArtist() {
   });
   const [isBonusLoading, setIsBonusLoading] = useState(false);
 
-  // 🔥 НОВОЕ: Баланс кредитов
+  //  НОВОЕ: Баланс кредитов
   const [balance, setBalance] = useState<number | null>(null);
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function NeuroArtist() {
     }
   }, [userId]);
 
-  // 🔥 НОВОЕ: Загружаем баланс кредитов с сервера
+  //  НОВОЕ: Загружаем баланс кредитов с сервера
   const refreshBalance = async () => {
     if (!userId) return;
     try {
@@ -167,7 +167,7 @@ export default function NeuroArtist() {
     }
   }, [history]);
 
-  // 🔥 ОБНОВЛЕНО: НАЗВАНИЯ И ЦЕНЫ
+  //  ОБНОВЛЕНО: НАЗВАНИЯ И ЦЕНЫ
   const modesByCategory = {
     photo: [
       {
@@ -211,13 +211,19 @@ export default function NeuroArtist() {
       {
         id: "bytedance_5",
         name: "ИИ-Режиссер (5 сек)",
-        cost: "30 кр.",
+        cost: "25 кр.",
         desc: "Видеоролик с нативным звуком",
       },
       {
         id: "bytedance_10",
         name: "ИИ-Режиссер (10 сек)",
         cost: "50 кр.",
+        desc: "Длинный клип с эффектами",
+      },
+      {
+        id: "bytedance_15",
+        name: "ИИ-Режиссер (15 сек)",
+        cost: "75 кр.",
         desc: "Длинный клип с эффектами",
       },
     ],
@@ -227,6 +233,12 @@ export default function NeuroArtist() {
         name: "Нейро-Музыка",
         cost: "3 кр.",
         desc: "Создание песни с вокалом по тексту",
+      },
+      {
+        id: "music_premium",
+        name: "Премиум-Музыка (MiniMax 2.6)",
+        cost: "15 кр.",
+        desc: "До 6 минут, BPM/Key, авто-ударения для русского",
       },
       {
         id: "tts",
@@ -265,6 +277,10 @@ export default function NeuroArtist() {
 
   const currentModes = modesByCategory[activeCategory];
   const [rawFiles, setRawFiles] = useState<File[]>([]);
+  const [videoRefFile, setVideoRefFile] = useState<File | null>(null);
+  const [audioRefFile, setAudioRefFile] = useState<File | null>(null);
+  const [videoRefPreview, setVideoRefPreview] = useState<string | null>(null);
+  const [audioRefPreview, setAudioRefPreview] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -275,9 +291,23 @@ export default function NeuroArtist() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setRawFiles((prev) => [...prev, ...filesArray]);
-      const newImages = filesArray.map((file) => URL.createObjectURL(file));
-      setSelectedImages((prev) => [...prev, ...newImages]);
+      const imgs = filesArray.filter((f) => f.type.startsWith("image/"));
+      const vids = filesArray.filter((f) => f.type.startsWith("video/"));
+      const auds = filesArray.filter((f) => f.type.startsWith("audio/"));
+      if (imgs.length) {
+        setRawFiles((prev) => [...prev, ...imgs]);
+        setSelectedImages((prev) => [...prev, ...imgs.map((f) => URL.createObjectURL(f))]);
+      }
+      if (vids[0]) {
+        setVideoRefFile(vids[0]);
+        if (videoRefPreview) URL.revokeObjectURL(videoRefPreview);
+        setVideoRefPreview(URL.createObjectURL(vids[0]));
+      }
+      if (auds[0]) {
+        setAudioRefFile(auds[0]);
+        if (audioRefPreview) URL.revokeObjectURL(audioRefPreview);
+        setAudioRefPreview(URL.createObjectURL(auds[0]));
+      }
     }
   };
 
@@ -287,21 +317,67 @@ export default function NeuroArtist() {
     setRawFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoRefUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      const file = e.target.files[0];
+      setVideoRefFile(file);
+      if (videoRefPreview) URL.revokeObjectURL(videoRefPreview);
+      setVideoRefPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAudioRefUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      const file = e.target.files[0];
+      setAudioRefFile(file);
+      if (audioRefPreview) URL.revokeObjectURL(audioRefPreview);
+      setAudioRefPreview(URL.createObjectURL(file));
+    }
+  };
+
   const isVideoUrl = (url: string) =>
     url.includes(".mp4") || url.includes("video") || url.includes(".mov");
   const isAudioUrl = (url: string) =>
     url.includes(".mp3") || url.includes(".wav") || url.includes("audio");
 
-  const handleCopyText = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedPrompt(true);
-    setTimeout(() => setCopiedPrompt(false), 2000);
+  //  Универсальное копирование (работает в VK iframe)
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {}
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return ok;
+    } catch (e) {
+      return false;
+    }
   };
 
-  // 🔥 НОВОЕ: ФУНКЦИЯ ПОЛУЧЕНИЯ БОНУСА
+  const handleCopyText = async (text: string) => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    } else {
+      alert("Не удалось скопировать. Скопируйте вручную:\n\n" + text.substring(0, 500));
+    }
+  };
+
+  //  НОВОЕ: ФУНКЦИЯ ПОЛУЧЕНИЯ БОНУСА
   const handleClaimBonus = async () => {
     if (!userId) {
-      alert("🔒 Пожалуйста, авторизуйтесь через ВКонтакте!");
+      alert(" Пожалуйста, авторизуйтесь через ВКонтакте!");
       return;
     }
 
@@ -336,7 +412,7 @@ export default function NeuroArtist() {
 
       if (response.data.success) {
         alert(
-          "🎉 Вам начислено 3 кредита! Теперь вы будете получать наши новости и акции в личные сообщения.",
+          " Вам начислено 3 кредита! Теперь вы будете получать наши новости и акции в личные сообщения.",
         );
         setBonusClaimed(true);
         if (userId) localStorage.setItem(`bonus_claimed_${userId}`, "true");
@@ -389,9 +465,9 @@ export default function NeuroArtist() {
     attemptCount = 0,
   ) => {
     if (!userId) return;
-    if (attemptCount > 100) {
+    if (attemptCount > 300) {
       alert(
-        "⏳ Генерация занимает больше времени, чем обычно. Пожалуйста, проверьте результат чуть позже в разделе «История».",
+        "⏳ Генерация занимает больше времени, чем обычно (более 10 минут). Результат появится в разделе «История», когда будет готов.",
       );
       setIsGenerating(false);
       return;
@@ -463,7 +539,7 @@ export default function NeuroArtist() {
   const handleGenerate = async () => {
     if (!userId) {
       alert(
-        "🔒 Пожалуйста, авторизуйтесь через ВКонтакте, чтобы использовать генерации!",
+        " Пожалуйста, авторизуйтесь через ВКонтакте, чтобы использовать генерации!",
       );
       return;
     }
@@ -475,7 +551,7 @@ export default function NeuroArtist() {
     )
       return;
 
-    if (activeMode === "music") {
+    if ((activeMode === "music" || activeMode === "music_premium")) {
       const lyricsLen = prompt.trim().length;
       if (lyricsLen < 10) {
         alert("Текст песни должен быть не короче 10 символов.");
@@ -500,9 +576,20 @@ export default function NeuroArtist() {
         prompt: prompt || "",
         image_urls: serverImageUrls,
       };
-      if (activeMode === "music") {
+      if (activeMode === "music" || activeMode === "music_premium") {
         payload.lyrics = prompt;
         payload.style_prompt = stylePrompt;
+      }
+      // Референсы для ИИ-Режиссёра
+      if (activeMode?.startsWith("bytedance_")) {
+        if (videoRefFile) {
+          const videoUrls = await uploadImagesToServer([videoRefFile]);
+          if (videoUrls.length > 0) payload.video_url = videoUrls[0];
+        }
+        if (audioRefFile) {
+          const audioUrls = await uploadImagesToServer([audioRefFile]);
+          if (audioUrls.length > 0) payload.audio_url = audioUrls[0];
+        }
       }
       const response = await axios.post(`${API_BASE}/generate`, payload, {
         headers: { "X-Bot-Token": BOT_TOKEN },
@@ -557,21 +644,21 @@ export default function NeuroArtist() {
               onClick={() => setModalMedia(null)}
               className="absolute top-4 right-4 bg-black/70 hover:bg-black text-white rounded-full w-9 h-9 flex items-center justify-center font-bold text-base transition shadow-lg border border-white/20"
             >
-              ✕
+              
             </button>
           </div>
         </div>
       )}
       <div className="lg:col-span-2 space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
-          {/* 🔥 НОВОЕ: заголовок + плашка баланса */}
+          {/*  НОВОЕ: заголовок + плашка баланса */}
           <div className="flex items-start justify-between gap-2 flex-wrap mb-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Студия генерации
             </h2>
             {userId && balance !== null && (
               <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 px-3 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 shrink-0">
-                <span className="text-sm">🪙</span>
+                <span className="text-sm"></span>
                 <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
                   {balance} кр.
                 </span>
@@ -632,6 +719,9 @@ export default function NeuroArtist() {
             "food",
             "furniture",
             "t2i",
+            "bytedance_5",
+            "bytedance_10",
+            "bytedance_15",
           ].includes(activeMode) && (
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
@@ -642,7 +732,7 @@ export default function NeuroArtist() {
                   <input
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept={activeMode?.startsWith("bytedance_") ? "image/*,video/*,audio/*" : "image/*"}
                     onChange={handleImageUpload}
                     className="hidden"
                   />
@@ -650,7 +740,9 @@ export default function NeuroArtist() {
                     Нажмите, чтобы прикрепить файлы, или перетащите их сюда
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Поддерживаются JPG, PNG, WEBP
+                    {activeMode?.startsWith("bytedance_")
+                      ? "Поддерживаются JPG, PNG, WEBP, видео, аудио"
+                      : "Поддерживаются JPG, PNG, WEBP"}
                   </p>
                 </label>
               ) : (
@@ -670,7 +762,7 @@ export default function NeuroArtist() {
                         onClick={() => handleRemoveImage(index)}
                         className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition shadow-md cursor-pointer"
                       >
-                        ✕
+                        
                       </button>
                     </div>
                   ))}
@@ -678,7 +770,7 @@ export default function NeuroArtist() {
                     <input
                       type="file"
                       multiple
-                      accept="image/*"
+                      accept={activeMode?.startsWith("bytedance_") ? "image/*,video/*,audio/*" : "image/*"}
                       onChange={handleImageUpload}
                       className="hidden"
                     />
@@ -691,7 +783,8 @@ export default function NeuroArtist() {
               )}
             </div>
           )}
-          {activeMode === "music" && (
+          
+          {(activeMode === "music" || activeMode === "music_premium") && (
             <div className="space-y-3">
               <label className="block text-xs font-semibold text-gray-500 uppercase">
                 Стиль музыки (выберите или введите свой)
@@ -777,19 +870,19 @@ export default function NeuroArtist() {
           {activeMode !== "gfpgan" && (
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
-                {activeMode === "music"
+                {(activeMode === "music" || activeMode === "music_premium")
                   ? "Текст песни (с тегами секций)"
                   : activeMode === "tts"
                     ? "Текст для озвучки"
                     : "Текстовое описание (Промпт)"}
               </label>
               <textarea
-                maxLength={activeMode === "music" ? 600 : 5000}
-                rows={activeMode === "music" ? 8 : 3}
+                maxLength={(activeMode === "music" || activeMode === "music_premium") ? 600 : 5000}
+                rows={(activeMode === "music" || activeMode === "music_premium") ? 8 : 3}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={
-                  activeMode === "music"
+                  (activeMode === "music" || activeMode === "music_premium")
                     ? "[verse]\nПервый куплет вашей песни...\n\n[chorus]\nПрипев, который запомнится!\n\n[verse]\nВторой куплет...\n\n[chorus]\nПрипев снова!"
                     : "Подробно опишите, что должна создать нейросеть..."
                 }
@@ -916,11 +1009,11 @@ export default function NeuroArtist() {
       </div>
 
       <div className="space-y-6">
-        {/* 🔥 НОВОЕ: БЛОК БОНУСА ЗА ПОДПИСКУ */}
+        {/*  НОВОЕ: БЛОК БОНУСА ЗА ПОДПИСКУ */}
         {userId && !bonusClaimed && (
           <div className="rounded-2xl border border-green-200 dark:border-green-900/30 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/10 p-5 shadow-sm space-y-3">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🎁</span>
+              <span className="text-2xl"></span>
               <h3 className="font-bold text-sm text-gray-900 dark:text-white">
                 Бонус за подписку
               </h3>
@@ -935,7 +1028,7 @@ export default function NeuroArtist() {
               disabled={isBonusLoading}
               className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition shadow-sm cursor-pointer disabled:opacity-50"
             >
-              {isBonusLoading ? "Получаем..." : "Получить +3 кредита 🎉"}
+              {isBonusLoading ? "Получаем..." : "Получить +3 кредита "}
             </button>
           </div>
         )}
@@ -996,7 +1089,7 @@ export default function NeuroArtist() {
                         onClick={() => handleCopyText(item.prompt)}
                         className="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                       >
-                        {copiedPrompt ? "✓ Скопировано" : "📋 Скопировать"}
+                        {copiedPrompt ? " Скопировано" : " Скопировать"}
                       </button>
                     </div>
                   </div>

@@ -10,8 +10,8 @@ export default function Kids() {
       title: "Нейро-Малыш",
       age: "2–5 лет",
       description: "Запуск речи, базовый кругозор, эмоциональный интеллект и логика",
-      price: "180 ₽ навсегда",
-      freeTrial: "24 часа бесплатно",
+      price: "290 ₽ навсегда",
+      freeTrial: "7 дней бесплатно",
       vkAppId: "54603838",
       route: "/kids/malysh",
       badgeStyle: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
@@ -24,8 +24,8 @@ export default function Kids() {
       title: "Нейро-Гений",
       age: "6+ лет",
       description: "Ментальная арифметика, развивающие игры, память и китайский язык",
-      price: "250 ₽/навсегда",
-      freeTrial: "24 часа бесплатно",
+      price: "290 ₽ навсегда",
+      freeTrial: "7 дней бесплатно",
       vkAppId: "54612283",
       route: "/kids/genius",
       badgeStyle: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
@@ -41,7 +41,7 @@ export default function Kids() {
       price: "От 150 ₽",
       freeTrial: "6 кредитов в подарок",
       vkAppId: "54451631",
-      route: "/kids/tutor",
+      route: "/kids/repetitor",
       badgeStyle: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
       accentColor: "group-hover:text-indigo-500",
       borderHover: "hover:border-indigo-500/30",
@@ -50,7 +50,13 @@ export default function Kids() {
   ];
 
   const handleOpenApp = (vkAppId: string, route: string) => {
-    // 1. Если запущены внутри VK Mini App
+    // Если есть веб-версия (роут определён) — идём туда
+    if (route && route.startsWith("/kids/")) {
+      navigate(route);
+      return;
+    }
+
+    // Fallback: VK Mini App (для Гения/Репетитора, пока не перенесены)
     if ((window as any).vkBridge) {
       (window as any).vkBridge
         .send("VKWebAppOpenApp", { app_id: parseInt(vkAppId) })
@@ -59,8 +65,6 @@ export default function Kids() {
         });
       return;
     }
-
-    // 2. Открываем веб-версию приложения VK в новой вкладке (без ошибки 404 роутера)
     window.open(`https://vk.com/app${vkAppId}`, "_blank");
   };
 
